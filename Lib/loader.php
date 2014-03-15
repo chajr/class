@@ -9,7 +9,6 @@ spl_autoload_register('Loader::loadClass');
  *
  * @category    Loader
  * @author      chajr <chajr@bluetree.pl>
- * @version     0.1.0
  */
 class Loader
 {
@@ -39,7 +38,7 @@ class Loader
             self::exceptions($e);
         }
     }
-    
+
     /**
      * set constants with main path to index.php, framework files etc
      * basically as argument use __FILE__
@@ -52,17 +51,27 @@ class Loader
         define('MAIN_PATH', $main);
         define('LOG_PATH', $main . '/log/');
         define('CORE_LIB', $main . '/Lib/');
-        
-        //pozostale sciezki
     }
 
+    /**
+     * initialize modules if initialize class exists
+     */
     protected function _initModules()
     {
-        foreach (self::$_configuration->getModules() as $module) {
-            $module = self::name2path(Loader::code2name($module), FALSE);
-            $path   = CORE_LIB . $module . '/Initialize.php';
-            if (file_exists($path)) {
-                //uruchamia klase i zapisuje w rejestrze po nazwa modulu (jako kod)
+        if (self::getConfiguration()->getConfiguration()->getInitialize() === 'disabled') {
+            return;
+        }
+
+        $modules = array_keys(self::$_configuration->getModules()->getData());
+
+        foreach ($modules as $module) {
+            $initialize = Loader::getConfiguration()->getData($module)->getInitialize();
+            $modulePath = self::name2path(Loader::code2name($module), FALSE);
+            $path       = CORE_LIB . $modulePath . '/Initialize.php';
+            $loadClass  = file_exists($path) && $initialize !== '';
+
+            if ($loadClass) {
+                self::getObject(self::code2name($module) . '_Initialize');
             }
         }
     }
@@ -157,7 +166,7 @@ class Loader
         $moduleExist    = TRUE;
 
         if ($module !== 'core_blue') {
-            $modules        = self::$_configuration->getModules();
+            $modules        = self::$_configuration->getModules()->getData();
             $moduleExist    = isset($modules[$module]) && $modules[$module] === 'enabled';
         }
 
@@ -184,26 +193,32 @@ class Loader
         if ($instanceName) {
             $name = $instanceName;
         }
+
         $instanceCode   = strtolower($name);
         $instance       = self::$_register->getData($instanceCode);
 
         if (!$instance) {
             try {
-            $object = self::$_register->setObject($class, $name, $args);
+                $instance = self::$_register->setObject($class, $name, $args);
             } catch (Exception $e) {
                 self::exceptions($e);
             }
-            return $object;
         }
 
         return $instance;
-
     }
-    
-    static function getClass($name, $args)
+
+    /**
+     * try to create new object and return it
+     * 
+     * @param string $name
+     * @param array $args
+     * @return mixed
+     */
+    static function getClass($name, $args = [])
     {
         try {
-            //return new $name($args);
+            return new $name($args);
         } catch (Exception $e) {
             self::exceptions($e);
         }

@@ -2,9 +2,8 @@
 /**
  * extend DOMDocument to use framework xml configuration files
  *
- * @category    BlueFramework
- * @package     BlueFramework Core
- * @subpackage  xml
+ * @package     Core
+ * @subpackage  Blue
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  * @version     1.6.0

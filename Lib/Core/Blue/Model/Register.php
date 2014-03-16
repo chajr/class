@@ -16,6 +16,7 @@ class Core_Blue_Model_Register extends Core_Blue_Model_Object
      */
     public function setObject($class, $name, $args)
     {
+        Loader::tracer('initialize object', debug_backtrace(), '006c94');
         $object = FALSE;
 
         try {

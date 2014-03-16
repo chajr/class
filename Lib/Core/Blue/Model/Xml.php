@@ -136,13 +136,7 @@ class Core_Blue_Model_Xml
      */
     public function __construct($version = '', $encoding = '')
     {
-        if (class_exists('tracer_class')) {
-            tracer_class::marker(array(
-                'start xml class',
-                debug_backtrace(),
-                '#7E3A02'
-            ));
-        }
+        Loader::tracer('start xml class', debug_backtrace(), '7E3A02');
 
         parent::__construct($version, $encoding);
     }
@@ -157,13 +151,7 @@ class Core_Blue_Model_Xml
      */
     public function loadXmlFile($url, $parse = FALSE)
     {
-        if (class_exists('tracer_class')) {
-            tracer_class::marker(array(
-                'load xml file',
-                debug_backtrace(),
-                '#7E3A02'
-            ));
-        }
+        Loader::tracer('load xml file', debug_backtrace(), '7E3A02');
 
         $this->preserveWhiteSpace    = FALSE;
         $bool                        = @file_exists($url);
@@ -198,13 +186,7 @@ class Core_Blue_Model_Xml
      */
     public final function saveXmlFile($url, $asString = FALSE)
     {
-        if (class_exists('tracer_class')) {
-            tracer_class::marker(array(
-                'save xml file',
-                debug_backtrace(),
-                '#7E3A02'
-            ));
-        }
+        Loader::tracer('save xml file', debug_backtrace(), '7E3A02');
 
         $this->formatOutput = TRUE;
 

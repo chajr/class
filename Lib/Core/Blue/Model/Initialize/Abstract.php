@@ -10,6 +10,7 @@ abstract class Core_Blue_Model_Initialize_Abstract
 {
     public function __construct($params)
     {
+        Loader::tracer('initialize module', debug_backtrace(), '4d4d4d');
         $this->init();
     }
 

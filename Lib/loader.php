@@ -159,6 +159,8 @@ class Loader
      */
     static function loadClass($class)
     {
+        Loader::tracer('class loaded', debug_backtrace(), '008e85');
+
         $classPath      = self::name2path($class);
         $module         = self::name2module($class);
         $fullPath       = CORE_LIB . $classPath;
@@ -189,6 +191,8 @@ class Loader
      */
     static function getObject($class, $args = [], $instanceName = NULL)
     {
+        Loader::tracer('get object', debug_backtrace(), '006c94');
+
         $name = $class;
         if ($instanceName) {
             $name = $instanceName;
@@ -217,20 +221,89 @@ class Loader
      */
     static function getClass($name, $args = [])
     {
+        Loader::tracer('create object', debug_backtrace(), '008e85');
+
         try {
             return new $name($args);
         } catch (Exception $e) {
             self::exceptions($e);
         }
     }
-    
-    static function exceptions($exception)
+
+    /**
+     * handle exception message
+     * 
+     * @param Exception $exception
+     */
+    static function exceptions(Exception $exception)
     {
-        
+        Loader::tracer('exception', debug_backtrace(), '900000');
+        self::log('exception', $exception->getMessage(), 'exception');
     }
 
-    static function log()
+    /**
+     * log message to specific file
+     * 
+     * @param string $type
+     * @param string|array $message
+     * @param string $title
+     */
+    static function log($type, $message, $title)
     {
-        
+        Loader::tracer('create log information', debug_backtrace(), '6d6d6d');
+
+        if (is_array($message)) {
+            $information = '';
+            foreach ($message as $key => $value) {
+                $information .= "- $key: $value\n";
+            }
+            $message = $information;
+        } else {
+            $message .= "\n";
+        }
+
+        $time       = strftime('%H:%M:%S - %d-%m-%Y');
+        $logFile    = $type . '.log';
+        $logPath    = LOG_PATH . $logFile;
+        $title      = strtoupper($title);
+        $format     = "$title - [$time]:\n$message----------------------\n\n";
+
+        if (!is_dir(LOG_PATH)) {
+            @mkdir(LOG_PATH);
+            @chmod(LOG_PATH, 0777);
+        }
+
+        if (!file_exists($logPath)) {
+            @file_put_contents($logPath, '');
+            @chmod($logPath, 0777);
+        }
+
+        file_put_contents($logPath, $format, FILE_APPEND);
+    }
+
+    /**
+     * alias for Core_Benchmark_Helper_Tracer::marker
+     * with checking that class exists
+     * 
+     * @param $message
+     * @param $debugBacktrace
+     * @param $color
+     */
+    static function tracer($message, $debugBacktrace = NULL, $color = '000000')
+    {
+        if (!self::$_configuration) {
+            return;
+        }
+
+        $classExists    = class_exists('Core_Benchmark_Helper_Tracer');
+        $useTracer      = self::$_configuration->getConfiguration()->getTracer();
+
+        if ($classExists && $useTracer) {
+            Core_Benchmark_Helper_Tracer::marker([
+                $message,
+                $debugBacktrace,
+                '#' . $color
+            ]);
+        }
     }
 }

@@ -306,4 +306,29 @@ class Loader
             ]);
         }
     }
+
+    /**
+     * create event
+     * create event observer in ini file in that model event_code[class_name] = method
+     * 
+     * @param string $name
+     * @param array $data
+     */
+    static function callEvent($name, $data = [])
+    {
+        /** @var Core_Blue_Model_Object $events */
+        $events = Loader::getConfiguration()->getEvents();
+
+        if ($events) {
+            foreach ($events->getData($name) as $class => $method) {
+                $object = self::getObject($class);
+
+                try {
+                    $object->$method($data);
+                } catch (Exception $e) {
+                    self::exceptions($e);
+                }
+            }
+        }
+    }
 }

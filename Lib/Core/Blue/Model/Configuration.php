@@ -15,7 +15,7 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
     {
         $coreConfig     = $this->_loadModuleConfiguration('Core');
         $otherConfig    = $this->_loadEnabledModulesConfiguration($coreConfig['modules']);
-        $mainConfig     = array_merge($coreConfig, $otherConfig);
+        $mainConfig     = array_merge_recursive($coreConfig, $otherConfig);
 
         parent::__construct($mainConfig);
         $newData = $this->traveler('_convertToObject');
@@ -94,7 +94,7 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
         foreach ($modules as $moduleName => $enabled) {
             if ($enabled === 'enabled') {
                 $configuration = $this->_loadModuleConfiguration($moduleName);
-                $modulesConfiguration = array_merge($modulesConfiguration, $configuration);
+                $modulesConfiguration = array_merge_recursive($modulesConfiguration, $configuration);
             }
         }
 

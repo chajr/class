@@ -13,7 +13,7 @@ class Core_Benchmark_Initialize extends Core_Blue_Model_Initialize_Abstract
      */
     public function init()
     {
-        $configuration  = Loader::getConfiguration()->getConfiguration();
+        $configuration  = Loader::getConfiguration()->getCore();
         $benchmark      = $configuration->getBenchmark() === 'enabled';
         $tracer         = $configuration->getTracer() === 'enabled';
 

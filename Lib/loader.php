@@ -31,8 +31,8 @@ class Loader
     {
         try {
             $this->_setPaths($filePath);
-            $this->_loadConfiguration();
             $this->_setRegister();
+            $this->_loadConfiguration();
             $this->_initModules();
         } catch (Exception $e) {
             self::exceptions($e);
@@ -51,6 +51,7 @@ class Loader
         define('MAIN_PATH', $main);
         define('LOG_PATH', $main . '/log/');
         define('CORE_LIB', $main . '/Lib/');
+        define('CORE_CACHE', $main . '/Lib/cache/');
     }
 
     /**
@@ -58,7 +59,7 @@ class Loader
      */
     protected function _initModules()
     {
-        if (self::getConfiguration()->getConfiguration()->getInitialize() === 'disabled') {
+        if (self::getConfiguration()->getCore()->getInitialize() === 'disabled') {
             return;
         }
 
@@ -130,6 +131,17 @@ class Loader
     }
 
     /**
+     * convert module name to module code
+     *
+     * @param string $module
+     * @return string
+     */
+    static function name2code($module)
+    {
+        return implode('_', array_map('strtolower', explode('_', $module)));
+    }
+
+    /**
      * get package and module name form class name
      * 
      * @param string $name
@@ -198,18 +210,28 @@ class Loader
             $name = $instanceName;
         }
 
-        $instanceCode   = strtolower($name);
+        $instanceCode   = self::name2code($name);
         $instance       = self::$_register->getData($instanceCode);
 
         if (!$instance) {
             try {
-                $instance = self::$_register->setObject($class, $name, $args);
+                $instance = self::$_register->setObject($class, $instanceCode, $args);
             } catch (Exception $e) {
                 self::exceptions($e);
             }
         }
 
         return $instance;
+    }
+
+    /**
+     * return list of all objects stored in register
+     * 
+     * @return array
+     */
+    static function getRegisteredObjects()
+    {
+        return self::$_register->getRegisteredObjects();
     }
 
     /**
@@ -296,7 +318,7 @@ class Loader
         }
 
         $classExists    = class_exists('Core_Benchmark_Helper_Tracer');
-        $useTracer      = self::$_configuration->getConfiguration()->getTracer();
+        $useTracer      = self::$_configuration->getCore()->getTracer();
 
         if ($classExists && $useTracer) {
             Core_Benchmark_Helper_Tracer::marker([
@@ -312,7 +334,7 @@ class Loader
      * create event observer in ini file in that model event_code[class_name] = method
      * 
      * @param string $name
-     * @param array $data
+     * @param mixed $data
      */
     static function callEvent($name, $data = [])
     {

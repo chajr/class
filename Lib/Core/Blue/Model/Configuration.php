@@ -13,9 +13,14 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
      */
     public function __construct()
     {
-        $coreConfig     = $this->_loadModuleConfiguration('Core');
-        $otherConfig    = $this->_loadEnabledModulesConfiguration($coreConfig['modules']);
-        $mainConfig     = array_merge_recursive($coreConfig, $otherConfig);
+        $mainConfig = $this->_configCache();
+
+        if (!$mainConfig) {
+            $coreConfig     = $this->_loadModuleConfiguration('Core');
+            $otherConfig    = $this->_loadEnabledModulesConfiguration($coreConfig['modules']);
+            $mainConfig     = array_merge_recursive($coreConfig, $otherConfig);
+            $this->_configCache($mainConfig);
+        }
 
         parent::__construct($mainConfig);
         $newData = $this->traveler('_convertToObject');
@@ -115,5 +120,23 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
         }
 
         return $data;
+    }
+
+    /**
+     * return cached configuration or save it to cache file
+     * 
+     * @param null|mixed $data
+     * @return bool|void
+     */
+    protected function _configCache($data = NULL)
+    {
+        /** @var Core_Blue_Model_Cache $cache */
+        $cache = Loader::getObject('Core_Blue_Model_Cache');
+        if ($data) {
+            $readyData = serialize($data);
+            return $cache->setCache('main_configuration', $readyData);
+        } else {
+            return unserialize($cache->getCache('main_configuration'));
+        }
     }
 }

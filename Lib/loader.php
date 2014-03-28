@@ -31,6 +31,7 @@ class Loader
     {
         try {
             $this->_setPaths($filePath);
+            $this->_checkTemp();
             $this->_setRegister();
             $this->_loadConfiguration();
             $this->_initModules();
@@ -52,6 +53,19 @@ class Loader
         define('LOG_PATH', $main . '/Lib/log/');
         define('CORE_LIB', $main . '/Lib/');
         define('CORE_CACHE', $main . '/Lib/cache/');
+        define('CORE_TEMP', $main . '/Lib/tmp/');
+    }
+
+    /**
+     * check that tmp directory exists
+     * and create it if not
+     */
+    protected function _checkTemp()
+    {
+        if (!file_exists(CORE_TEMP)) {
+            @file_put_contents(CORE_TEMP, '');
+            @chmod(CORE_TEMP, 0777);
+        }
     }
 
     /**

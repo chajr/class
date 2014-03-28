@@ -49,7 +49,7 @@ class Loader
     {
         $main = dirname($filePath);
         define('MAIN_PATH', $main);
-        define('LOG_PATH', $main . '/log/');
+        define('LOG_PATH', $main . '/Lib/log/');
         define('CORE_LIB', $main . '/Lib/');
         define('CORE_CACHE', $main . '/Lib/cache/');
     }

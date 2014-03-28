@@ -9,7 +9,7 @@
  * @subpackage  Blue
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @version     1.1.1
+ * @version     1.1.2
  * @todo ini data handling (convert from ini and to ini data)
  */
 class Core_Blue_Model_Object
@@ -749,7 +749,8 @@ class Core_Blue_Model_Object
         $bool                       = @$xml->loadXML($data);
 
         if (!$bool) {
-            $this->_errorsList['xml_load_error'] = $data;
+            $this->_errorsList['xml_load_error']    = $data;
+            $this->_hasErrors                       = TRUE;
             return $this;
         }
 

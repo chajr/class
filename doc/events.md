@@ -15,4 +15,6 @@ move_uploaded_file_before
 move_uploaded_file_after
 read_uploaded_file_before
 read_uploaded_file_after
-
+connect_mysql_before
+connect_mysql_after
+connect_mysql_exception

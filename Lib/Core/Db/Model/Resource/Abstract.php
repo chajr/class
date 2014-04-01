@@ -1,12 +1,465 @@
 <?php
 /**
- * 
+ * base class to create real data models
+ * one model == one table in database
  *
  * @package     Core
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Model_Resource_Abstract
+class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
 {
-    
+    const TABLE_STRUCTURE_CACHE_PREFIX  = 'table_structure_';
+    const DATA_TYPE_COLLECTION          = 'collection';
+    const DATA_TYPE_OBJECT              = 'object';
+
+    /**
+     * resource table name
+     * 
+     * @var string
+     */
+    protected $_tableName;
+
+    /**
+     * id column name
+     * 
+     * @var string
+     */
+    protected $_columnId;
+
+    /**
+     * resource table structure
+     * 
+     * @var array
+     */
+    protected $_tableStructure = [];
+
+    /**
+     * filter to retrieve data from database
+     * 
+     * @var array
+     */
+    protected $_filters = [];
+
+    /**
+     * main query used in current instance
+     * 
+     * @var string
+     */
+    protected $_query;
+
+    /**
+     * @var string
+     */
+    protected $_dataType;
+
+    /**
+     * number of returned from database rows
+     * 
+     * @var int
+     */
+    protected $_rows = 0;
+
+    /**
+     * name of key prefix for xml node
+     * if array key was integer
+     *
+     * @var string
+     */
+    protected $_integerKeyPrefix = 'collection_index';
+
+    /**
+     * create resource object
+     * get table structure if not exist in cache
+     */
+    public function initializeObject()
+    {
+        $message = 'initialize resource model:' . $this->_tableName;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent('initialize_resource_model_before', $this);
+
+        try{
+            if (empty($this->_tableStructure)) {
+                $this->_tableStructure = $this->_tableStructure();
+                if (!$this->_tableStructure) {
+                    $this->_tableStructure = $this->_returnTableStructure();
+                    $this->_tableStructure($this->_tableStructure);
+                }
+            }
+        } catch (Exception $e) {
+            $this->_hasErrors       = TRUE;
+            $this->_errorsList[]    = $e->getMessage();
+            Loader::exceptions($e, 'initialize resource', 'database');
+        }
+    }
+
+    /**
+     * call event after initialize resource
+     */
+    public function afterInitializeObject()
+    {
+        Loader::callEvent('initialize_resource_model_after', $this);
+    }
+
+    /**
+     * get or set table structure from cache
+     * 
+     * @param mixed $structure
+     * @return mixed
+     */
+    protected function _tableStructure($structure = NULL)
+    {
+        /** @var Core_Blue_Model_Cache $cache */
+        $cache = Loader::getClass('Core_Blue_Model_Cache');
+        $name  = self::TABLE_STRUCTURE_CACHE_PREFIX . $this->_tableName;
+
+        if ($structure) {
+            $readyData = serialize($structure);
+            return $cache->setCache($name, $readyData);
+        } else {
+            return unserialize($cache->getCache($name));
+        }
+    }
+
+    /**
+     * read table structure from database
+     * 
+     * @return array
+     * @throws Exception
+     */
+    protected function _returnTableStructure()
+    {
+        $this->_query       = 'DESCRIBE ' . $this->_tableName;
+        $result             = $this->_executeQuery($this->_query);
+        $structure          = $result->fullResult();
+
+        if (empty($structure)) {
+            throw new Exception('missing table structure');
+        }
+
+        return $structure;
+    }
+
+    public function tableName($tableName)
+    {
+        $this->_tableName = $tableName;
+        return $this;
+    }
+
+    public function returnTableName()
+    {
+        return $this->_tableName;
+    }
+
+    public function columnId($columnId)
+    {
+        $this->_columnId = $columnId;
+        return $this;
+    }
+
+    public function returnColumnId()
+    {
+        return $this->_columnId;
+    }
+
+    public function tableStructure()
+    {
+        return $this->_tableStructure;
+    }
+
+    /**
+     * load single row or all data from table
+     * 
+     * @param mixed $id
+     * @param null|string $column
+     * @return $this
+     */
+    public function load($id = NULL, $column = NULL)
+    {
+        $message = 'load resource:' . $this->_tableName . ', ' . $id;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent('load_data_to_resource_before', [$this, $id]);
+
+        $this->_query = 'SELECT * FROM ' . $this->_tableName;
+        if ($id) {
+            $this->_query .= ' WHERE ' . $this->_columnId . " = '$id'";
+        }
+
+        try {
+            $resource = $this->_executeQuery();
+            $this->_createCollection($resource);
+            Loader::callEvent('load_data_to_resource_after', [$this, $id, $resource]);
+        } catch (Exception $e) {
+            Loader::callEvent('load_data_to_resource_error', [$this, $id, $e]);
+            $this->_hasErrors       = TRUE;
+            $this->_errorsList[]    = $e->getMessage();
+            Loader::exceptions($e, 'load resource', 'database');
+        }
+
+        return $this;
+    }
+
+    /**
+     * return data of first element in collection
+     * 
+     * @return mixed|null
+     */
+    public function returnFirstItem()
+    {
+        return $this->returnRow(0);
+    }
+
+    /**
+     * return last element in collection
+     * 
+     * @return mixed|null
+     */
+    public function returnLastItem()
+    {
+        $index = $this->_rows -1;
+        return $this->returnRow($index);
+    }
+
+    /**
+     * return whole collection
+     * 
+     * @return mixed|null
+     */
+    public function returnCollection()
+    {
+        if ($this->_dataType === self::DATA_TYPE_COLLECTION) {
+            return $this->getData();
+        }
+
+        return NULL;
+    }
+
+    /**
+     * return row with given index
+     * 
+     * @param $rowIndex
+     * @return mixed|null
+     */
+    public function returnRow($rowIndex)
+    {
+        if ($this->_dataType === self::DATA_TYPE_COLLECTION) {
+            $key = $this->_integerToStringKey($rowIndex);
+            /** @var Core_Blue_Model_Object $object */
+            $object = $this->getData($key);
+
+            if ($object instanceof Core_Blue_Model_Object) {
+                return $object->getData();
+            }
+
+            return NULL;
+        }
+
+        return $this->getData();
+    }
+
+    /**
+     * set returned data as object data or collection of objects
+     * 
+     * @param Core_Db_Helper_Mysql $resource
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _createCollection(Core_Db_Helper_Mysql $resource)
+    {
+        $result         = $resource->fullResult();
+        $this->_rows    = $resource->rows;
+
+        if ($resource->rows === 0) {
+            return $this;
+        }
+
+        if ($resource->rows === 1) {
+            $this->setData($result[0]);
+            $this->replaceDataArrays();
+            $this->_dataType = self::DATA_TYPE_OBJECT;
+        } else {
+            $this->_transformRowsToObject($result);
+            $this->_dataType = self::DATA_TYPE_COLLECTION;
+            return $this;
+        }
+    }
+
+    /**
+     * convert array of dta from database to Core_Blue_Model_Object
+     * 
+     * @param array $result
+     * @return $this
+     */
+    protected function _transformRowsToObject(array $result)
+    {
+        static $counter = 0;
+
+        foreach ($result as $row) {
+            $object = Loader::getClass('Core_Blue_Model_Object', $row);
+            $key    = $this->_integerToStringKey($counter);
+            $this->setData($key, $object);
+            $counter++;
+        }
+
+        return $this;
+    }
+
+    /**
+     * convert data saved in object to query string
+     * 
+     * @return string
+     * @todo collection handling
+     */
+    protected function _transformStructureToUpdate()
+    {
+        $query = 'UPDATE ' . $this->_tableName . ' SET ';
+        foreach ($this->_tableStructure as $column) {
+            $field  = $column['Field'];
+            $isNull = !$this->getData($field);
+            $isId   = $column['Field'] === $this->_columnId;
+
+            if ($isNull || $isId) {
+                continue;
+            }
+
+            $query .= $field . ' = \'' . $this->getData($field) . '\',';
+        }
+
+        return rtrim($query, ',');
+    }
+
+    /**
+     * convert data saved in object to update query
+     * 
+     * @return string
+     * @todo collection handling
+     */
+    protected function _transformStructureToInsert()
+    {
+        $fields = '';
+        $data   = '';
+        $query  = 'INSERT INTO ';
+
+        foreach ($this->_tableStructure as $column) {
+            $fields .= $column['Field'] . ',';
+            $data   .= '\'' . $this->getData($column['Field']) . '\',';
+        }
+
+        $fields = rtrim($fields, ',');
+        $data   = rtrim($data, ',');
+        $query  .= '(' . $fields . ') VALUES (' . $data . ')';
+
+        return $query;
+    }
+
+    public function returnedRows()
+    {
+        
+    }
+
+    /**
+     * allow to save data from model
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     * @todo collection handling
+     */
+    public function save()
+    {
+        $message = 'save resource:' . $this->_tableName;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent('save_resource_data_before', $this);
+
+        if ($this->_dataType === self::DATA_TYPE_OBJECT) {
+            $id = $this->getData($this->_columnId);
+            if ($id) {
+                $this->_query = $this->_transformStructureToUpdate();
+                $this->_query .= ' WHERE ' . $this->_columnId . " = '$id'";
+            } else {
+                $this->_query = $this->_transformStructureToInsert();
+            }
+        }
+
+        try {
+            $this->_executeQuery();
+        } catch (Exception $e) {
+            $this->_hasErrors       = TRUE;
+            $this->_errorsList[]    = $e->getMessage();
+            Loader::callEvent('save_resource_data_error', [$this, $e]);
+            Loader::exceptions($e, 'save error', 'database');
+        }
+
+        Loader::callEvent('save_resource_data_after', $this);
+        return $this;
+    }
+
+    public function addFilter()
+    {
+        
+    }
+
+    public function returnFilters()
+    {
+        
+    }
+
+    public function removeFilter()
+    {
+        
+    }
+
+    public function orderBy($column, $order)
+    {
+        
+    }
+
+    public function limit($start, $count)
+    {
+        
+    }
+
+    /**
+     * @return string
+     */
+    public function returnQuery()
+    {
+        return $this->_query;
+    }
+
+    /**
+     * allow to replace created by model query
+     * 
+     * @param string $query
+     */
+    public function replaceQuery($query)
+    {
+        $this->_query = $query;
+    }
+
+    /**
+     * return data type
+     * 
+     * @return string
+     */
+    public function returnDataType()
+    {
+        return $this->_dataType;
+    }
+
+    /**
+     * execute given query and checks that there was some errors
+     * 
+     * @return Core_Db_Helper_Mysql
+     * @throws Exception
+     */
+    protected function _executeQuery()
+    {
+        /** @var Core_Db_Helper_Mysql $structure */
+        $result      = Loader::getClass('Core_Db_Helper_Mysql', $this->_query);
+        $hasErrors   = $result->err;
+
+        if ($hasErrors) {
+            throw new Exception('error with resource query ' . $hasErrors);
+        }
+
+        return $result;
+    }
 }

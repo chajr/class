@@ -270,11 +270,13 @@ class Loader
      * handle exception message
      * 
      * @param Exception $exception
+     * @param string $title
+     * @param string $type
      */
-    static function exceptions(Exception $exception)
+    static function exceptions(Exception $exception, $title = 'exception', $type = 'exception')
     {
-        Loader::tracer('exception', debug_backtrace(), '900000');
-        self::log('exception', $exception->getMessage(), 'exception');
+        Loader::tracer($title, debug_backtrace(), '900000');
+        self::log($type, $exception, $title);
     }
 
     /**

@@ -32,3 +32,5 @@ load_data_to_resource_error
 save_resource_data_before
 save_resource_data_after
 save_resource_data_error
+render_template_before
+render_template_after

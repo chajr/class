@@ -1,7 +1,16 @@
 <?php
-
+/**
+ * allow rendering templates and replace marker content
+ *
+ * @package     Core
+ * @subpackage  Render
+ * @author      chajr <chajr@bluetree.pl>
+ * @todo cache template before replace markers
+ */
 class Core_Render_View_Abstract
 {
+    const MAIN_TEMPLATE_KEY_NAME = 'main_template';
+
     /**
      * regular expression that corresponds to all display class markers
      * @var string
@@ -13,6 +22,20 @@ class Core_Render_View_Abstract
         'external_start'    => "{;external;",
         'marker_end'        => ";}",
         'marker_start'      => "{;",
+        'domain'            => '#{;core;domain;}#',
+        'current_page'      => '#{;core;current_page;}#',
+        'current_dir'       => '#{;core;current_dir;}#',
+        'protocol'          => '#{;core;protocol;}#',
+        'current_url'       => '#{;core;current_url;}#',
+        'full_path'         => '#{;core;full_path;}#',
+        'anchor'            => '#{;core;anchor;}#',
+        'port'              => '#{;core;port;}#',
+        'loop_markers'      => '#{;(start|end);([\\w-])+;}#',
+        'loop_start'        => '{;start;',
+        'loop_end'          => '{;end;',
+        'optional_markers'  => '#{;op;([\\w-])+;}#',
+        'optional_start'    => '{;op;',
+        'optional_end'      => '{;op_end;',
     ];
 
     /**
@@ -38,11 +61,6 @@ class Core_Render_View_Abstract
     protected $_markers;
 
     /**
-     * @var array
-     */
-    protected $_blocks = [];
-
-    /**
      * create block instance
      * 
      * @param string $template
@@ -54,13 +72,35 @@ class Core_Render_View_Abstract
         Loader::callEvent('initialize_block_abstract_object_before', $this);
         $this->initializeBlock();
 
+        $newData            = $this->_getMarkersFromSession($data);
         $this->_session     = Loader::getObject('SESSION');
         $this->_templates   = Loader::getClass('Core_Blue_Model_Object');
-        $this->_markers     = Loader::getClass('Core_Blue_Model_Object', $data);
+        $this->_markers     = Loader::getClass('Core_Blue_Model_Object', $newData);
         $this->_createMainLayout($template);
 
         $this->afterInitializeBlock();
         Loader::callEvent('initialize_block_abstract_object_after', $this);
+    }
+
+    /**
+     * apply markers set in session
+     * 
+     * @param array|null $data
+     * @return array|null
+     */
+    protected function _getMarkersFromSession($data)
+    {
+        /** @var Core_Incoming_Model_Session $session */
+        $sessionModel   = Loader::getObject('SESSION');
+        $instance       = $sessionModel instanceof Core_Incoming_Model_Session;
+        $sessionData    = $sessionModel->getSessionMarkers();
+        $isData         = is_array($data);
+
+        if ($instance && $isData && $sessionData) {
+            $data = array_merge($sessionData, $data);
+        }
+
+        return $data;
     }
 
     /**
@@ -83,14 +123,21 @@ class Core_Render_View_Abstract
         return $this->_clearMarkers;
     }
 
+    /**
+     * create object instance main layout
+     * join all required templates
+     * 
+     * @param string $template
+     * @return $this
+     */
     protected function _createMainLayout($template)
     {
         Loader::tracer('create main layout for block', debug_backtrace(), '006400');
         Loader::callEvent('create_main_layout_before', [$this, &$template]);
 
         $content = $this->_checkTemplatePath($template);
-        $this->_templates->setMainTemplate($content);
-        $this->_external('main_template');
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
+        $this->_external(self::MAIN_TEMPLATE_KEY_NAME);
 
         Loader::callEvent('create_main_layout_after', $this);
         return $this;
@@ -140,12 +187,13 @@ class Core_Render_View_Abstract
         preg_match_all(
             $this->_contentMarkers['external'],
             $baseContent,
-            $list)
-        ;
+            $list
+        );
 
         foreach ($list[0] as $externalTemplate) {
 
-            $newTemplate = str_replace(
+            $newTemplate  = CORE_LIB;
+            $newTemplate .= str_replace(
                 [
                     $this->_contentMarkers['external_start'],
                     $this->_contentMarkers['marker_end']
@@ -154,7 +202,7 @@ class Core_Render_View_Abstract
                 $externalTemplate
             );
 
-            $content    = $this->_checkTemplatePath($newTemplate);
+            $content    = $this->_checkTemplatePath($newTemplate . '.html');
             $newContent = str_replace(
                 $externalTemplate,
                 $content,
@@ -165,16 +213,6 @@ class Core_Render_View_Abstract
         }
 
         return $this;
-    }
-
-    public function initializeBlock()
-    {
-        
-    }
-
-    public function afterInitializeBlock()
-    {
-        
     }
 
     /**
@@ -190,6 +228,10 @@ class Core_Render_View_Abstract
      */
     public function generate($marker, $content, $template = 'main_content')
     {
+        
+        //dopisywanie danych do blue object
+        //zastepowanie dopiero przy renderowaniu
+        
         $content = $this->_checkContent($content);
         $markerStart = $this->_contentMarkers['marker_start'];
 
@@ -237,4 +279,251 @@ class Core_Render_View_Abstract
 
         return $content;
     }
+
+    /**
+     * join contents included in modules groups in complete page, replace paths
+     * fix urls, clean from markers and optionally compress
+     *
+     * @return string complete content to display
+     */
+    public function render()
+    {
+        Loader::tracer('render content of display class', debug_backtrace(), '006400');
+        Loader::callEvent('render_template_before', $this);
+
+        foreach ($this->_templates->getData() as $template => $content) {
+
+            if ($template === self::MAIN_TEMPLATE_KEY_NAME) {
+                continue;
+            }
+
+            $mainTemplate = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+            $mainTemplate = str_replace(
+                '{;mod;' . $template . ';}',
+                $content,
+                $mainTemplate
+            );
+            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
+        }
+
+        $this->_renderMarkers();
+        $this->_path();
+        $this->_clean();
+
+        $finalContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+
+        Loader::callEvent('render_template_after', [$this, &$finalContent]);
+        return $finalContent;
+    }
+
+    protected function _renderMarkers()
+    {
+        //generowanie markerow z podanej listy
+    }
+
+    /**
+     * run clean methods to remove unused markers
+     * 
+     * @return Core_Render_View_Abstract
+     */
+    protected function _clean()
+    {
+        if ($this->_clearMarkers === FALSE) {
+            return $this;
+        }
+
+        Loader::tracer('remove unused markers', debug_backtrace(), '006400');
+
+        $this->_cleanMarkers('loop');
+        $this->_cleanMarkers('optional');
+
+        $mainContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+        $mainContent = preg_replace($this->_contentMarkers['markers'], '', $mainContent);
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainContent);
+
+        return $this;
+    }
+
+    /**
+     * clean template from unused markers on loops and optional values
+     *
+     * @param string $type type to check
+     * @return Core_Render_View_Abstract
+     */
+    protected function _cleanMarkers($type)
+    {
+        switch ($type) {
+            case'loop':
+                $reg1 = $this->_contentMarkers['loop_markers'];
+                $reg2 = FALSE;
+                $reg3 = $this->_contentMarkers['loop_start'];
+                $reg4 = $this->_contentMarkers['loop_end'];
+                break;
+
+            case'optional':
+                $reg1 = $this->_contentMarkers['optional_markers'];
+                $reg2 = $this->_contentMarkers['markers'];
+                $reg3 = $this->_contentMarkers['optional_end'];
+                $reg4 = $this->_contentMarkers['optional_end'];
+                break;
+
+            default:
+                return $this;
+        }
+
+        $mainContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+
+        preg_match_all($reg1, $mainContent, $array);
+        if (!empty($array) && !empty($array[0])) {
+            foreach ($array[0] as $marker) {
+
+                $start      = strpos($mainContent, $marker);
+                $endMarker  = str_replace($reg3, $reg4, $marker);
+                $end        = strpos($mainContent, $endMarker);
+
+                if (!$start || !$end) {
+                    continue;
+                }
+
+                $startContent   = $start + mb_strlen($marker);
+                $contentLength  = $end - $startContent;
+                $string         = substr($mainContent, $startContent, $contentLength);
+                $end            += mb_strlen($endMarker);
+                $len            = $end - $start;
+                $stringToRemove = substr($mainContent, $start, $len);
+
+                if ($reg2) {
+                    $bool = preg_match($reg2, $string);
+                    if ($bool) {
+                        $mainContent = str_replace($stringToRemove, '', $mainContent);
+                    } else {
+                        $mainContent = str_replace($stringToRemove, $string, $mainContent);
+                    }
+                } else {
+                    $mainContent = preg_replace($reg1, '', $mainContent);
+                }
+            }
+        }
+
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainContent);
+        return $this;
+    }
+
+    /**
+     * replace paths marker with data
+     *
+     * @return Core_Render_View_Abstract
+     */
+    protected function _path()
+    {
+        Loader::tracer('replace path markers', debug_backtrace(), '006400');
+
+        $this->_convertPathMarkers('current_page');
+        $this->_convertPathMarkers('full_path');
+        $this->_convertPathMarkers('current_dir');
+        $this->_convertPathMarkers('domain');
+        $this->_convertPathMarkers('protocol');
+        $this->_convertPathMarkers('current_url');
+        $this->_convertPathMarkers('anchor');
+        $this->_convertPathMarkers('port');
+
+        return $this;
+    }
+
+    /**
+     * convert specific core path marker
+     * 
+     * @param string $type
+     * @return Core_Render_View_Abstract
+     */
+    protected function _convertPathMarkers($type)
+    {
+        /** @var Core_Incoming_Model_Get $getModel */
+        $getModel    = Loader::getObject('GET');
+        $mainContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+        $instance    = $getModel instanceof Core_Incoming_Model_Get; 
+
+        if (!$instance) {
+            return $this;
+        }
+
+        switch($type)
+        {
+            case'current_page':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->currentPage(),
+                    $mainContent
+                );
+                break;
+
+            case'full_path':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->fullPath(),
+                    $mainContent
+                );
+                break;
+
+            case'current_dir':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->currentDir(),
+                    $mainContent
+                );
+                break;
+
+            case'domain':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->domain(),
+                    $mainContent
+                );
+                break;
+
+            case'protocol':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->protocol(),
+                    $mainContent
+                );
+                break;
+
+            case'current_url':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->currentUrl(),
+                    $mainContent
+                );
+                break;
+
+            case'anchor':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->anchor(),
+                    $mainContent
+                );
+                break;
+
+            case'port':
+                $mainContent = preg_replace(
+                    $this->_contentMarkers[$type],
+                    $getModel->port(),
+                    $mainContent
+                );
+                break;
+        }
+
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainContent);
+        return $this;
+    }
+
+    static function getSkinTemplate($template, $module)
+    {
+        
+    }
+
+    public function initializeBlock(){}
+
+    public function afterInitializeBlock(){}
 }

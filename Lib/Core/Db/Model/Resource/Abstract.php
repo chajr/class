@@ -69,6 +69,29 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     protected $_integerKeyPrefix = 'collection_index';
 
     /**
+     * default page size for collection
+     * default load all collection
+     * NULL if not use pagination
+     * 
+     * @var int
+     */
+    protected $_pageSize = 10;
+
+    /**
+     * contains given page number
+     * 
+     * @var int
+     */
+    protected $_currentPage = 1;
+
+    /**
+     * contain current row number when transforming collection to object
+     * 
+     * @var int
+     */
+    protected $_collectionCounter;
+
+    /**
      * create resource object
      * get table structure if not exist in cache
      */
@@ -140,28 +163,69 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         return $structure;
     }
 
+    /**
+     * allow to set new table name
+     * (require to reinitialize object)
+     * 
+     * @param string $tableName
+     * @return Core_Db_Model_Resource_Abstract
+     */
     public function tableName($tableName)
     {
         $this->_tableName = $tableName;
         return $this;
     }
 
+    /**
+     * reinitialize object
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function reinitialize()
+    {
+        $this->initializeObject();
+        $this->afterInitializeObject();
+
+        return $this;
+    }
+
+    /**
+     * return model table name
+     * 
+     * @return string
+     */
     public function returnTableName()
     {
         return $this->_tableName;
     }
 
+    /**
+     * allow to set new name of id column
+     * 
+     * @param string $columnId
+     * @return Core_Db_Model_Resource_Abstract
+     */
     public function columnId($columnId)
     {
         $this->_columnId = $columnId;
         return $this;
     }
 
+    /**
+     * return column id name
+     * 
+     * @return string
+     */
     public function returnColumnId()
     {
         return $this->_columnId;
     }
 
+    /**
+     * return full table structure information
+     * 
+     * @return array
+     */
     public function tableStructure()
     {
         return $this->_tableStructure;
@@ -173,6 +237,7 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
      * @param mixed $id
      * @param null|string $column
      * @return $this
+     * @todo other column select
      */
     public function load($id = NULL, $column = NULL)
     {
@@ -184,16 +249,34 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         if ($id) {
             $this->_query .= ' WHERE ' . $this->_columnId . " = '$id'";
         }
+        $this->_applyPageSize();
 
         try {
+            $this->unsetData();
             $resource = $this->_executeQuery();
             $this->_createCollection($resource);
+            $this->replaceDataArrays();
             Loader::callEvent('load_data_to_resource_after', [$this, $id, $resource]);
         } catch (Exception $e) {
             Loader::callEvent('load_data_to_resource_error', [$this, $id, $e]);
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
             Loader::exceptions($e, 'load resource', 'database');
+        }
+
+        return $this;
+    }
+
+    /**
+     * add limit to main query
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _applyPageSize()
+    {
+        if ($this->_pageSize && $this->_currentPage) {
+            $start           = ($this->_currentPage -1) * $this->_pageSize;
+            $this->_query   .= " LIMIT $start, " . $this->_pageSize;
         }
 
         return $this;
@@ -274,7 +357,6 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
 
         if ($resource->rows === 1) {
             $this->setData($result[0]);
-            $this->replaceDataArrays();
             $this->_dataType = self::DATA_TYPE_OBJECT;
         } else {
             $this->_transformRowsToObject($result);
@@ -291,13 +373,13 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
      */
     protected function _transformRowsToObject(array $result)
     {
-        static $counter = 0;
+        $this->_collectionCounter = 0;
 
         foreach ($result as $row) {
             $object = Loader::getClass('Core_Blue_Model_Object', $row);
-            $key    = $this->_integerToStringKey($counter);
+            $key    = $this->_integerToStringKey($this->_collectionCounter);
             $this->setData($key, $object);
-            $counter++;
+            $this->_collectionCounter++;
         }
 
         return $this;
@@ -428,10 +510,12 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
      * allow to replace created by model query
      * 
      * @param string $query
+     * @return Core_Db_Model_Resource_Abstract
      */
     public function replaceQuery($query)
     {
         $this->_query = $query;
+        return $this;
     }
 
     /**
@@ -461,5 +545,67 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         }
 
         return $result;
+    }
+
+    /**
+     * allow to set page size
+     * 
+     * @param integer $size
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function pageSize($size)
+    {
+        $this->_pageSize = $size;
+        return $this;
+    }
+
+    /**
+     * retrieve page size value
+     * 
+     * @return int
+     */
+    public function returnPageSize()
+    {
+        return $this->_pageSize;
+    }
+
+    /**
+     * set page number to retrieve
+     * 
+     * @param integer $page
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function page($page)
+    {
+        $this->_currentPage = $page;
+        return $this;
+    }
+
+    /**
+     * return current page number
+     * 
+     * @return int
+     */
+    public function returnCurrentPage()
+    {
+        return $this->_currentPage;
+    }
+
+    /**
+     * allow to load all collection without using pagination
+     * 
+     * @param mixed $id
+     * @param null|string $column
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function loadAll($id, $column = NULL)
+    {
+        $pageSize           = $this->_pageSize;
+        $this->_pageSize    = NULL;
+
+        $this->load($id, $column);
+
+        $this->_pageSize = $pageSize;
+        return $this;
     }
 }

@@ -34,3 +34,7 @@ save_resource_data_after
 save_resource_data_error
 render_template_before
 render_template_after
+render_grid_before
+render_grid_after
+initialize_grid_object_before
+initialize_grid_object_after

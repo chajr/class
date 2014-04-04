@@ -129,16 +129,30 @@ class Core_Blue_Model_Xml
     public $idList;
 
     /**
+     * default constructor options
+     * 
+     * @var array
+     */
+    protected $_options = [
+        'version'   =>'',
+        'encoding'  => ''
+    ];
+
+    /**
      * start DOMDocument, optionally create new document
      *
-     * @param string $version
-     * @param string $encoding
+     * @param array $options
      */
-    public function __construct($version = '', $encoding = '')
+    public function __construct(array $options = [])
     {
         Loader::tracer('start xml class', debug_backtrace(), '7E3A02');
+        
+        $this->_options = array_merge($this->_options, $options);
 
-        parent::__construct($version, $encoding);
+        parent::__construct(
+            $this->_options['version'],
+            $this->_options['encoding']
+        );
     }
 
     /**

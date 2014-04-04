@@ -92,6 +92,20 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     protected $_collectionCounter;
 
     /**
+     * list of order information
+     * 
+     * @var array
+     */
+    protected $_orderBy = [];
+
+    /**
+     * where clause
+     * 
+     * @var string
+     */
+    protected $_where = '';
+
+    /**
      * create resource object
      * get table structure if not exist in cache
      */
@@ -247,9 +261,9 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
 
         $this->_query = 'SELECT * FROM ' . $this->_tableName;
         if ($id) {
-            $this->_query .= ' WHERE ' . $this->_columnId . " = '$id'";
+            $this->where($this->_columnId . " = '$id'");
         }
-        $this->_applyPageSize();
+        $this->_applyWhere()->_applyOrder()->_applyPageSize();
 
         try {
             $this->unsetData();
@@ -454,14 +468,14 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
             $id = $this->getData($this->_columnId);
             if ($id) {
                 $this->_query = $this->_transformStructureToUpdate();
-                $this->_query .= ' WHERE ' . $this->_columnId . " = '$id'";
+                $this->where($this->_columnId . " = '$id'");
             } else {
                 $this->_query = $this->_transformStructureToInsert();
             }
         }
 
         try {
-            $this->_executeQuery();
+            $this->_applyWhere()->_executeQuery();
         } catch (Exception $e) {
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
@@ -488,14 +502,109 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         
     }
 
-    public function orderBy($column, $order)
+    /**
+     * add order to list
+     * 
+     * @param string $rule
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function orderBy($rule)
     {
-        
+        $this->_orderBy[] = $rule;
+        return $this;
     }
 
+    /**
+     * sets where clause
+     * 
+     * @param string $rule
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function where($rule)
+    {
+        $this->_where = $rule;
+        return $this;
+    }
+
+    /**
+     * apply where clause to existing one
+     * (remember ot add AND | OR before)
+     * 
+     * @param string $rule
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function applyWhere($rule)
+    {
+        $this->_where .= $rule;
+        return $this;
+    }
+
+    /**
+     * return array of orders
+     * 
+     * @return array
+     */
+    public function returnOrder()
+    {
+        return $this->_orderBy;
+    }
+
+    /**
+     * return where string
+     * 
+     * @return string
+     */
+    public function returnWhere()
+    {
+        return $this->_where;
+    }
+
+    /**
+     * apply order to main query
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _applyOrder()
+    {
+        if (!empty($this->_orderBy)) {
+            $this->_query .= ' ORDER BY ';
+
+            foreach ($this->_orderBy as $order) {
+                $this->_query .= $order . ',';
+            }
+
+            $this->_query = rtrim($this->_query, ',');
+        }
+        return $this;
+    }
+
+    /**
+     * apply where to main query
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _applyWhere()
+    {
+        if ($this->_where) {
+            $this->_query .= ' WHERE ' . $this->_where;
+        }
+        return $this;
+    }
+
+    /**
+     * set limit for collection
+     * (use pagination methods)
+     * 
+     * @param integer $start
+     * @param integer $count
+     * @return Core_Db_Model_Resource_Abstract
+     */
     public function limit($start, $count)
     {
-        
+        $this->_pageSize    = $count;
+        $this->_currentPage = $start;
+
+        return $this;
     }
 
     /**

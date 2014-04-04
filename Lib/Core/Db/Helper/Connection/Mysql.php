@@ -33,44 +33,50 @@ class Core_Db_Helper_Connection_Mysql extends mysqli
      */
     static $defaultCharset = 'UTF8';
 
+    protected $_options = [
+        'host'              => '',
+        'username'          => '',
+        'pass'              => '',
+        'db_name'           => '',
+        'port'              => NULL,
+        'connection_name'   => NULL,
+        'charset'           => 'UTF8',
+    ];
+
     /**
      * creates instance of mysqli object and connect to database
      * name default is used for default connection to database !!!!
      *
-     * @param array $config (host, username, pass, dbName, port, connectionName)
-     * @param string $charset (default UTF8)
-     * @example new mysql_connection_class(array('localhost', 'user', 'pass', 'db', '3306', 'connection'))
-     * @example new mysql_connection_class(array('localhost', 'user', 'pass', 'db'))
-     * @example new mysql_connection_class(array('localhost', 'user', 'pass', 'db', '3306'))
-     * @example new mysql_connection_class(array('localhost', 'user', 'pass', 'db'), 'LATIN1')
+     * @param array $options (host, username, pass, db_name, port, connection_name, charset)
      */
-    public function __construct($config, $charset = 'UTF8')
+    public function __construct(array $options)
     {
-        self::$defaultCharset = $charset;
+        $this->_options         = array_merge($this->_options, $options);
+        self::$defaultCharset   = $this->_options['charset'];
 
-        if (isset($config) && !empty($config)) {
+        parent::__construct(
+            $this->_options['host'],
+            $this->_options['username'],
+            $this->_options['pass'],
+            $this->_options['db_name'],
+            $this->_options['port']
+        );
 
-            parent::__construct(
-                $config['host'],
-                $config['username'],
-                $config['pass'],
-                $config['db_name'],
-                $config['port']
-            );
-
-            if (mysqli_connect_error()) {
-                $this->err = mysqli_connect_error();
-                return;
-            }
-
-            $this->query("SET NAMES '$charset'");
+        if (mysqli_connect_error()) {
+            $this->err = mysqli_connect_error();
+            return;
         }
 
-        if (!isset($config['connection_name']) || !$config['connection_name']) {
-            $config['connection_name'] = 'default';
+            $this->query("SET NAMES '{$this->_options['charset']}'");
+
+        $isSetConnection = !isset($this->_options['connection_name']);
+        $isConnection    = !$this->_options['connection_name'];
+
+        if ($isSetConnection || $isConnection) {
+            $this->_options['connection_name'] = Core_Db_Helper_Mysql::DEFAULT_CONNECTION_NAME;
         }
 
-        self::$connections[$config['connection_name']] = $this;
+        self::$connections[$this->_options['connection_name']] = $this;
     }
 
     /**

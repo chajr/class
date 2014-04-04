@@ -9,7 +9,7 @@
  * @subpackage  Blue
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @version     1.1.2
+ * @version     1.2.0
  * @todo ini data handling (convert from ini and to ini data)
  */
 class Core_Blue_Model_Object
@@ -67,22 +67,39 @@ class Core_Blue_Model_Object
     protected $_dataChanged = FALSE;
 
     /**
+     * default constructor options
+     * 
+     * @var array
+     */
+    protected $_options = [
+        'data'              => NULL,
+        'type'              => NULL,
+        'indexKeyPrefix'    => NULL
+    ];
+
+    /**
      * create new Blue Object, optionally with some data
      * there are some types we can give to convert data to Blue Object
      * like: json, xml, serialized, default is array
      *
-     * @param mixed $data
-     * @param string|null $type
-     * @param string|null $indexKeyPrefix
+     * @param array|null $options
      */
-    public function __construct($data = NULL, $type = NULL, $indexKeyPrefix = NULL)
+    public function __construct($options = [])
     {
+        if (!isset($options['type']) && !isset($options['indexKeyPrefix'])) {
+            $data = $options;
+        } else {
+            $this->_options = array_merge($this->_options, $options);
+            $data           = $this->_options['indexKeyPrefix'];
+        }
+        
+
         $this->initializeObject();
-        if ($indexKeyPrefix) {
-            $this->_integerKeyPrefix = $indexKeyPrefix;
+        if ($this->_options['indexKeyPrefix']) {
+            $this->_integerKeyPrefix = $this->_options['indexKeyPrefix'];
         }
 
-        switch ($type) {
+        switch ($this->_options['type']) {
             case 'json':
                 $this->_appendJson($data);
                 break;
@@ -556,7 +573,8 @@ class Core_Blue_Model_Object
     {
         $this->_prepareData();
 
-        $xml    = new Core_Blue_Model_Xml($version, 'UTF-8');
+        $config = ['version' => $version, 'encoding' => 'UTF-8'];
+        $xml    = new Core_Blue_Model_Xml($config);
         $root   = $xml->createElement('root');
         $xml    = $this->_arrayToXml($this->_DATA, $xml, $addCdata, $root);
 

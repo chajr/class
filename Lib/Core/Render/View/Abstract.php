@@ -12,6 +12,13 @@ class Core_Render_View_Abstract
     const MAIN_TEMPLATE_KEY_NAME = 'main_template';
 
     /**
+     * string used to join many content for one marker
+     * 
+     * @var string
+     */
+    protected $_contentGlue = ' ';
+
+    /**
      * regular expression that corresponds to all display class markers
      * @var string
      */
@@ -61,18 +68,34 @@ class Core_Render_View_Abstract
     protected $_markers;
 
     /**
+     * default constructor options
+     * 
+     * @var array
+     */
+    protected $_options = [
+        'template'  => '',
+        'data'      => NULL
+    ];
+
+    /**
      * create block instance
      * 
-     * @param string $template
-     * @param null|array $data
+     * @param string|array $options
      */
-    public function __construct($template, array $data = NULL)
+    public function __construct($options)
     {
         Loader::tracer('start block abstract class', debug_backtrace(), '006400');
         Loader::callEvent('initialize_block_abstract_object_before', $this);
-        $this->initializeBlock();
+        $this->initializeBlock($options);
 
-        $newData            = $this->_getMarkersFromSession($data);
+        if (is_string($options)) {
+            $template = $options;
+        } else {
+            $this->_options = array_merge($this->_options, $options);
+            $template       = $this->_options['template'];
+        }
+
+        $newData            = $this->_getMarkersFromSession($this->_options['data']);
         $this->_session     = Loader::getObject('SESSION');
         $this->_templates   = Loader::getClass('Core_Blue_Model_Object');
         $this->_markers     = Loader::getClass('Core_Blue_Model_Object', $newData);
@@ -85,11 +108,15 @@ class Core_Render_View_Abstract
     /**
      * apply markers set in session
      * 
-     * @param array|null $data
+     * @param array|null|Core_Blue_Model_Object $data
      * @return array|null
      */
     protected function _getMarkersFromSession($data)
     {
+        if ($data instanceof Core_Blue_Model_Object) {
+            $data = $data->getData();
+        }
+
         /** @var Core_Incoming_Model_Session $session */
         $sessionModel   = Loader::getObject('SESSION');
         $instance       = $sessionModel instanceof Core_Incoming_Model_Session;
@@ -107,10 +134,12 @@ class Core_Render_View_Abstract
      * set that markers will be cleared
      * 
      * @param boolean $val
+     * @return Core_Render_View_Abstract
      */
     public function setClearMarkers($val)
     {
         $this->_clearMarkers = (bool)$val;
+        return $this;
     }
 
     /**
@@ -128,7 +157,7 @@ class Core_Render_View_Abstract
      * join all required templates
      * 
      * @param string $template
-     * @return $this
+     * @return Core_Render_View_Abstract
      */
     protected function _createMainLayout($template)
     {
@@ -220,45 +249,45 @@ class Core_Render_View_Abstract
      *
      * @param string|array $marker marker name or array (marker => value)
      * @param string|boolean $content some string or NULL if marker array given
-     * @param string|boolean $template name of module that wants to replace content (default core)
-     * @return integer count of replaced markers
+     * @return Core_Render_View_Abstract
+     * 
      * @example generate('marker', 'content')
-     * @example generate('marker', 'content', 'module')
      * @example generate(array('marker' => 'content', 'marker2' => 'other content'), '')
      */
-    public function generate($marker, $content, $template = 'main_content')
+    public function generate($marker, $content = NULL)
     {
-        
-        //dopisywanie danych do blue object
-        //zastepowanie dopiero przy renderowaniu
-        
-        $content = $this->_checkContent($content);
-        $markerStart = $this->_contentMarkers['marker_start'];
+        if (is_array($marker)) {
+            foreach ($marker as $key => $value) {
+                $this->_setMarkerData($key, $value);
+            }
+        } else {
+            $this->_setMarkerData($marker, $content);
+        }
 
-        if ($this->_templates->hasData($template)) {
-            if (is_array($marker)) {
+        return $this;
+    }
 
-                foreach ($marker as $element => $content) {
-                    $this->DISPLAY[$template] = str_replace(
-                        '{;'.$element.';}',
-                        $content,
-                        $this->DISPLAY[$template],
-                        $int2
-                    );
-                }
-
+    /**
+     * set data in marker object
+     * 
+     * @param string $marker
+     * @param string $content
+     * @return Core_Render_View_Abstract
+     */
+    protected function _setMarkerData($marker, $content)
+    {
+        $content    = $this->_checkContent($content);
+        $markerData = $this->_markers->getData($marker);
+        if ($markerData) {
+            if (is_array($markerData)) {
+                array_push($markerData, $content);
+                $content = $markerData;
             } else {
-                $string             = $this->DISPLAY[$template];
-                $convertedString    = str_replace(
-                    '{;'.$marker.';}',
-                    $content,
-                    $string,
-                    $int
-                );
-                $this->DISPLAY[$template] = $convertedString;
+                $content = [$markerData, $content];
             }
         }
 
+        $this->_markers->setData($marker, $content);
         return $this;
     }
 
@@ -291,6 +320,29 @@ class Core_Render_View_Abstract
         Loader::tracer('render content of display class', debug_backtrace(), '006400');
         Loader::callEvent('render_template_before', $this);
 
+        try {
+            $this->_joinTemplates();
+            $this->_renderMarkers();
+            $this->_path();
+            $this->_clean();
+        } catch (Exception $e) {
+            Loader::exceptions($e, 'render', 'warning');
+        }
+
+        $finalContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+
+        Loader::callEvent('render_template_after', [$this, &$finalContent]);
+        return $finalContent;
+    }
+
+    /**
+     * join all templates added to main renderer
+     * 
+     * @return Core_Render_View_Abstract
+     * @todo fix and check
+     */
+    protected function _joinTemplates()
+    {
         foreach ($this->_templates->getData() as $template => $content) {
 
             if ($template === self::MAIN_TEMPLATE_KEY_NAME) {
@@ -306,19 +358,67 @@ class Core_Render_View_Abstract
             $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
         }
 
-        $this->_renderMarkers();
-        $this->_path();
-        $this->_clean();
-
-        $finalContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
-
-        Loader::callEvent('render_template_after', [$this, &$finalContent]);
-        return $finalContent;
+        return $this;
     }
 
+    /**
+     * render content to markers
+     * 
+     * @return Core_Render_View_Abstract
+     */
     protected function _renderMarkers()
     {
-        //generowanie markerow z podanej listy
+        $keys       = array_keys($this->_markers->getData());
+        $content    = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+
+        foreach ($keys as $markerKey) {
+            $markerContent  = $this->_implodeContent($markerKey);
+            $markerStart    = $this->_contentMarkers['marker_start'];
+            $markerEnd      = $this->_contentMarkers['marker_end'];
+            $marker         = $markerStart . $markerKey . $markerEnd;
+            $content        = str_replace($marker, $markerContent, $content);
+        }
+
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
+        return $this;
+    }
+
+    /**
+     * implode content for marker using set up glue
+     * 
+     * @param string $marker
+     * @return string
+     */
+    protected function _implodeContent($marker)
+    {
+        $content = $this->_markers->getData($marker);
+        if (is_array($content)) {
+            return implode($this->_contentGlue, $this->_markers->getData($marker));
+        }
+
+        return $content;
+    }
+
+    /**
+     * change default string glue
+     * 
+     * @param string $glue
+     * @return Core_Render_View_Abstract
+     */
+    public function setContentGlue($glue)
+    {
+        $this->_contentGlue = $glue;
+        return $this;
+    }
+
+    /**
+     * return set up string glue
+     * 
+     * @return string
+     */
+    public function getContentGlue()
+    {
+        return $this->_contentGlue;
     }
 
     /**

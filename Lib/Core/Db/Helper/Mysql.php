@@ -7,40 +7,57 @@
  * @subpackage  Db
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @version     3.3.2
+ * @version     3.4.0
  *
  * Display <a href="http://sam.zoy.org/wtfpl/COPYING">Do What The Fuck You Want To Public License</a>
  * @license http://sam.zoy.org/wtfpl/COPYING Do What The Fuck You Want To Public License
  */
-class Core_Db_Helper_Mysql
-    extends Core_Db_Helper_Abstract
+class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
 {
+    const DEFAULT_CONNECTION_NAME = 'default_connection';
+
+    /**
+     * default constructor options
+     * 
+     * @var array
+     */
+    protected $_options = [
+        'sql'           => '',
+        'connection'    => NULL,
+        'charset'       => NULL
+    ];
+
     /**
      * set default connection and run given query
      * optionally we can give other connection and change charset
      *
-     * @param string $sql
-     * @param string $connection optionally connection name (default - default)
-     * @param string $charset
+     * @param string|array $options
      * @example new mysql_class('SELECT * FROM table')
-     * @example new mysql_class('SELECT * FROM table', 'connection')
-     * @example new mysql_class('SELECT * FROM table', 0, 'LATIN1')
+     * @example new mysql_class(['sql'=>'SELECT * FROM table', 'connection'=>'name'])
+     * @example new mysql_class(['sql'=>'SELECT * FROM table', 'connection'=>NULL, 'charset'=>'LATIN1'])
      */
-    public function __construct($sql, $connection = 'default', $charset = NULL)
+    public function __construct($options)
     {
-        if (!$connection) {
-            $this->_connection = 'default';
+        if (is_string($options)) {
+            $sql = $options;
         } else {
-            $this->_connection = $connection;
+            $this->_options = array_merge($this->_options, $options);
+            $sql            = $this->_options['sql'];
         }
 
-        if ($charset) {
-            $this->_setCharset($charset);
+        if ($this->_options['connection']) {
+            $this->_connection = $this->_options['connection'];
+        } else {
+            $this->_connection = self::DEFAULT_CONNECTION_NAME;
+        }
+
+        if ($this->_options['charset']) {
+            $this->_setCharset($this->_options['charset']);
         }
 
         $this->_query($sql);
 
-        if ($charset) {
+        if ($this->_options['charset']) {
             $this->_setCharset(Core_Db_Helper_Connection_Mysql::$defaultCharset);
         }
     }

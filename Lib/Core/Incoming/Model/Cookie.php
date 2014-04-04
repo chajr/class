@@ -12,20 +12,14 @@ class Core_Incoming_Model_Cookie extends Core_Blue_Model_Object
      * convert cookie to object
      * 
      * @param array $cookie
-     * @param null|string $indexKeyPrefix
      */
-    public function __construct(&$cookie, $indexKeyPrefix = NULL)
+    public function __construct(&$cookie)
     {
         Loader::tracer('start cookie class', debug_backtrace(), '213A59');
         Loader::callEvent('initialize_cookie_object_before', $this);
 
         $this->initializeObject();
-        if ($indexKeyPrefix) {
-            $this->_integerKeyPrefix = $indexKeyPrefix;
-        }
-
         $this->_DATA = &$cookie;
-
         $this->afterInitializeObject();
 
         Loader::callEvent('initialize_cookie_object_after', $this);

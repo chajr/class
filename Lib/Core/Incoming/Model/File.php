@@ -33,7 +33,7 @@ class Core_Incoming_Model_File extends Core_Incoming_Model_Abstract
     protected $_uploadErrors = [];
 
     /**
-     * 
+     * convert uploaded files info to object
      */
     public function __construct()
     {

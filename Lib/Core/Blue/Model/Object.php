@@ -86,13 +86,12 @@ class Core_Blue_Model_Object
      */
     public function __construct($options = [])
     {
-        if (!isset($options['type']) && !isset($options['indexKeyPrefix'])) {
-            $data = $options;
-        } else {
+        if (isset($options['data'])) {
             $this->_options = array_merge($this->_options, $options);
-            $data           = $this->_options['indexKeyPrefix'];
+            $data           = $this->_options['data'];
+        } else {
+            $data = $options;
         }
-        
 
         $this->initializeObject();
         if ($this->_options['indexKeyPrefix']) {

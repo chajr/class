@@ -67,7 +67,7 @@ class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
      */
     protected function _appendArray($data)
     {
-        foreach ($data as $key => $val) {
+        foreach ((array)$data as $key => $val) {
             try {
                 $this->_checkKey($key);
                 $this->_DATA[$key] = $val;

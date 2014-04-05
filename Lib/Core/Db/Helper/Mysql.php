@@ -41,7 +41,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
         if (is_string($options)) {
             $sql = $options;
         } else {
-            $this->_options = array_merge($this->_options, $options);
+            $this->_options = array_merge($this->_options, (array)$options);
             $sql            = $this->_options['sql'];
         }
 

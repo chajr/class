@@ -433,11 +433,13 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     {
         $fields = '';
         $data   = '';
-        $query  = 'INSERT INTO ';
+        $query  = 'INSERT INTO ' . $this->_tableName . ' ';
 
         foreach ($this->_tableStructure as $column) {
-            $fields .= $column['Field'] . ',';
-            $data   .= '\'' . $this->getData($column['Field']) . '\',';
+            if ($this->getData($column['Field'])) {
+                $fields .= $column['Field'] . ',';
+                $data   .= '\'' . $this->getData($column['Field']) . '\',';
+            }
         }
 
         $fields = rtrim($fields, ',');

@@ -375,8 +375,9 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         } else {
             $this->_transformRowsToObject($result);
             $this->_dataType = self::DATA_TYPE_COLLECTION;
-            return $this;
         }
+
+        return $this;
     }
 
     /**

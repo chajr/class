@@ -23,12 +23,29 @@ class Loader
     protected static $_register;
 
     /**
+     * @var array
+     */
+    protected $_skipConstructorMethods = [
+        'set_paths'     => FALSE,
+        'check_tmp'     => FALSE,
+        'set_register'  => FALSE,
+        'load_config'   => FALSE,
+        'init_modules'  => FALSE,
+    ];
+
+    /**
      * initialize framework
      * 
      * @param string $filePath
+     * @param array $skip
      */
-    public function __construct($filePath)
+    public function __construct($filePath, array $skip = [])
     {
+        $this->_skipConstructorMethods = array_merge(
+            $this->_skipConstructorMethods,
+            $skip
+        );
+
         try {
             $this->_setPaths($filePath);
             $this->_checkTemp();
@@ -45,36 +62,55 @@ class Loader
      * basically as argument use __FILE__
      * 
      * @param string $filePath
+     * @return Loader 
      */
     protected function _setPaths($filePath)
     {
+        if ($this->_skipConstructorMethods['set_paths']) {
+            return $this;
+        }
+
         $main = dirname($filePath);
         define('MAIN_PATH', $main);
         define('LOG_PATH', $main . '/Lib/log/');
         define('CORE_LIB', $main . '/Lib/');
         define('CORE_CACHE', $main . '/Lib/cache/');
         define('CORE_TEMP', $main . '/Lib/tmp/');
+
+        return $this;
     }
 
     /**
      * check that tmp directory exists
      * and create it if not
+     * 
+     * @return Loader
      */
     protected function _checkTemp()
     {
+        if ($this->_skipConstructorMethods['check_tmp']) {
+            return $this;
+        }
+
         if (!file_exists(CORE_TEMP)) {
             @file_put_contents(CORE_TEMP, '');
             @chmod(CORE_TEMP, 0777);
         }
+
+        return $this;
     }
 
     /**
      * initialize modules if initialize class exists
+     * 
+     * @return Loader
      */
     protected function _initModules()
     {
-        if (self::getConfiguration()->getCore()->getInitialize() === 'disabled') {
-            return;
+        $skip       = $this->_skipConstructorMethods['init_modules'];
+        $disabled   = @self::getConfiguration()->getCore()->getInitialize() === 'disabled';
+        if ($skip || $disabled) {
+            return $this;
         }
 
         $modules = array_keys(self::$_configuration->getModules()->getData());
@@ -89,14 +125,24 @@ class Loader
                 self::getObject(self::code2name($module) . '_Initialize');
             }
         }
+
+        return $this;
     }
 
     /**
      * load all configuration for enabled modules
+     * 
+     * @return Loader
      */
     protected function _loadConfiguration()
     {
+        if ($this->_skipConstructorMethods['load_config']) {
+            return $this;
+        }
+
         self::$_configuration = new Core_Blue_Model_Configuration();
+
+        return $this;
     }
 
     /**
@@ -104,7 +150,13 @@ class Loader
      */
     protected function _setRegister()
     {
+        if ($this->_skipConstructorMethods['set_register']) {
+            return $this;
+        }
+
         self::$_register = new Core_Blue_Model_Register();
+
+        return $this;
     }
 
     /**
@@ -192,8 +244,10 @@ class Loader
         $fullPath       = CORE_LIB . $classPath;
         $fileExist      = file_exists($fullPath);
         $moduleExist    = TRUE;
+        $instance       = self::$_configuration instanceof Core_Blue_Model_Configuration;
+        $coreModule     = $module !== 'core_blue';
 
-        if ($module !== 'core_blue') {
+        if ($coreModule && $instance) {
             $modules        = self::$_configuration->getModules()->getData();
             $moduleExist    = isset($modules[$module]) && $modules[$module] === 'enabled';
         }

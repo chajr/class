@@ -22,7 +22,7 @@ class Core_Disc_Helper_Common
      */
     static function delete($path)
     {
-        $bool = TRUE;
+        $bool = [];
 
         if(!file_exists($path)){
             return NULL;
@@ -32,24 +32,28 @@ class Core_Disc_Helper_Common
 
         if (is_dir($path)) {
 
-            $list   = self::readDirectory($path);
-            $paths  = self::returnPaths($list, $path, TRUE);
+            $list   = self::readDirectory($path, TRUE);
+            $paths  = self::returnPaths($list, TRUE);
 
             if (isset($paths['file'])) {
                 foreach ($paths['file'] as $val) {
-                    unlink($val);
+                    $bool[] = unlink($val);
                 }
             }
 
             if (isset($paths['dir'])) {
                 foreach ($paths['dir'] as $val) {
-                    rmdir($val);
+                    $bool[] = rmdir($val);
                 }
             }
 
             rmdir($path);
         } else {
-            $bool = @unlink($path);
+            $bool[] = @unlink($path);
+        }
+
+        if (in_array(FALSE, $bool)) {
+            return FALSE;
         }
 
         return $bool;
@@ -65,6 +69,8 @@ class Core_Disc_Helper_Common
      */
     static function copy($path, $target)
     {
+        $bool = [];
+
         if (!Core_Incoming_Model_File::exist($path)) {
             return NULL;
         }
@@ -72,18 +78,18 @@ class Core_Disc_Helper_Common
         if (is_dir($path)) {
 
             if (!Core_Incoming_Model_File::exist($target)) {
-                mkdir($target);
+                $bool[] = mkdir($target);
             }
 
             $elements   = self::readDirectory($path);
-            $paths      = self::returnPaths($elements, '');
+            $paths      = self::returnPaths($elements);
 
             foreach ($paths['dir'] as $dir) {
-                mkdir($dir);
+                $bool[] = mkdir($dir);
             }
 
             foreach ($paths['file'] as $file) {
-                copy($path . "/$file", $target . "/$file");
+                $bool[] = copy($path . "/$file", $target . "/$file");
             }
 
         } else {
@@ -99,10 +105,14 @@ class Core_Disc_Helper_Common
                 }
             }
 
-            $bool = copy($path, $target);
+            $bool[] = copy($path, $target);
         }
 
-        return $bool;
+        if (in_array(FALSE, $bool)) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     /**
@@ -186,26 +196,34 @@ class Core_Disc_Helper_Common
     /**
      * move file or directory to given target
      *
-     * @param $path
-     * @param $target
+     * @param string $path
+     * @param string $target
+     * @return bool
      */
     static function move($path, $target)
     {
+        $bool = self::copy($path, $target);
 
+        if (!$bool) {
+            return FALSE;
+        }
+
+        return self::delete($path);
     }
 
     /**
-     * read directory content, and return all inside directories (with their content)
-     * sorted by array_multisort function
+     * read directory content, (optionally all sub folders)
      *
      * @param string $path
-     * @return array array with given path structure, or NULL if path incorrect
+     * @param boolean $whole
+     * @return array|null
      * @example readDirectory('dir/some_dir')
-     * @example readDirectory(); - read __FILE__ destination
+     * @example readDirectory('dir/some_dir', TRUE)
+     * @example readDirectory(); - read MAIN_PATH destination
      */
-    static function readDirectory($path = NULL)
+    static function readDirectory($path = NULL, $whole = FALSE)
     {
-        $list = array();
+        $list = [];
 
         if (!$path) {
             $path = MAIN_PATH;
@@ -214,29 +232,26 @@ class Core_Disc_Helper_Common
         if (!Core_Incoming_Model_File::exist($path)) {
             return NULL;
         }
-        
-        $directory = new DirectoryIterator($path);
-        
-//
-//        $handle = opendir($path);
-//        if ($handle) {
-//
-//            while ($element = readdir($handle) ){
-//                if ($element === '..' || $element === '.') {
-//                    continue;
-//                }
-//
-//                if (is_dir("$path/$element")) {
-//                    $list[$element] = self::readDirectory("$path/$element");
-//                } else {
-//                    $list[] = $element;
-//                }
-//            }
-//
-//            closedir($handle);
-//        }
-//
-//        array_multisort($list);
+
+        $iterator = new DirectoryIterator($path);
+
+        /** @var DirectoryIterator $element */
+        foreach ($iterator as $element) {
+            if ($element->isDot()) {
+                continue;
+            }
+
+            if ($whole && $element->isDir()) {
+                $list[$element->getRealPath()] = self::readDirectory(
+                    $element->getRealPath(),
+                    TRUE
+                );
+            } else {
+                $list[$element->getRealPath()] = $element->getFileInfo();
+            }
+
+        }
+
         return $list;
     }
 
@@ -244,44 +259,45 @@ class Core_Disc_Helper_Common
      * transform array wit directory/files tree to list of paths grouped on files and directories
      *
      * @param array $array array to transform
-     * @param string $path base path for elements, if emty use paths from transformed structure
      * @param boolean $reverse if TRUE revert array (required for deleting)
+     * @internal param string $path base path for elements, if emty use paths from transformed structure
      * @return array array with path list for files and directories
      * @example returnPaths($array, '')
      * @example returnPaths($array, '', TRUE)
      * @example returnPaths($array, 'some_dir/dir', TRUE)
      */
-    static function returnPaths($array, $path = '', $reverse = FALSE)
+    static function returnPaths(array $array, $reverse = FALSE)
     {
-        if($reverse){
+        if ($reverse) {
             $array = array_reverse($array);
         }
 
-        $pathList = array();
+        $pathList = [];
 
-        foreach ($array as $key => $val) {
-            if (is_dir($path . "/$key")) {
+        foreach ($array as $path => $fileInfo) {
+            if (is_dir($path)) {
 
-                $list = self::returnPaths($val, $path . "/$key");
+                $list = self::returnPaths($fileInfo);
                 foreach ($list as $element => $value) {
 
                     if ($element === 'file') {
                         foreach ($value as $file) {
-                            $pathList['file'][] = "$file";
+                            $pathList['file'][] = $file;
                         }
                     }
 
                     if ($element === 'dir') {
                         foreach ($value as $dir) {
-                            $pathList['dir'][] = "$dir";
+                            $pathList['dir'][] = $dir;
                         }
                     }
 
                 }
-                $pathList['dir'][] = $path . "/$key";
+                $pathList['dir'][] = $path;
 
             } else {
-                $pathList['file'][] = $path . "/$val";
+                /** @var DirectoryIterator $fileInfo */
+                $pathList['file'][] = $fileInfo->getRealPath();
             }
         }
 

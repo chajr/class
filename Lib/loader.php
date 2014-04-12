@@ -26,24 +26,24 @@ class Loader
      * @var array
      */
     protected $_skipConstructorMethods = [
-        'set_paths'     => FALSE,
-        'check_tmp'     => FALSE,
-        'set_register'  => FALSE,
-        'load_config'   => FALSE,
-        'init_modules'  => FALSE,
+        'set_paths'     => TRUE,
+        'check_tmp'     => TRUE,
+        'set_register'  => TRUE,
+        'load_config'   => TRUE,
+        'init_modules'  => TRUE,
     ];
 
     /**
      * initialize framework
      * 
      * @param string $filePath
-     * @param array $skip
+     * @param array $allowed
      */
-    public function __construct($filePath, array $skip = [])
+    public function __construct($filePath, array $allowed = [])
     {
         $this->_skipConstructorMethods = array_merge(
             $this->_skipConstructorMethods,
-            $skip
+            $allowed
         );
 
         try {
@@ -66,7 +66,7 @@ class Loader
      */
     protected function _setPaths($filePath)
     {
-        if ($this->_skipConstructorMethods['set_paths']) {
+        if (!$this->_skipConstructorMethods['set_paths']) {
             return $this;
         }
 
@@ -88,7 +88,7 @@ class Loader
      */
     protected function _checkTemp()
     {
-        if ($this->_skipConstructorMethods['check_tmp']) {
+        if (!$this->_skipConstructorMethods['check_tmp']) {
             return $this;
         }
 
@@ -107,9 +107,11 @@ class Loader
      */
     protected function _initModules()
     {
-        $skip       = $this->_skipConstructorMethods['init_modules'];
-        $disabled   = @self::getConfiguration()->getCore()->getInitialize() === 'disabled';
-        if ($skip || $disabled) {
+        if (!$this->_skipConstructorMethods['init_modules']) {
+            return $this;
+        }
+
+        if (self::getConfiguration()->getCore()->getInitialize() === 'disabled') {
             return $this;
         }
 
@@ -136,7 +138,7 @@ class Loader
      */
     protected function _loadConfiguration()
     {
-        if ($this->_skipConstructorMethods['load_config']) {
+        if (!$this->_skipConstructorMethods['load_config']) {
             return $this;
         }
 
@@ -150,7 +152,7 @@ class Loader
      */
     protected function _setRegister()
     {
-        if ($this->_skipConstructorMethods['set_register']) {
+        if (!$this->_skipConstructorMethods['set_register']) {
             return $this;
         }
 
@@ -268,6 +270,7 @@ class Loader
      * @param null|string $instanceName
      * 
      * @return object;
+     * @todo configuration check that module for class is enabled
      */
     static function getObject($class, $args = [], $instanceName = NULL)
     {
@@ -308,6 +311,7 @@ class Loader
      * @param string $name
      * @param array $args
      * @return mixed
+     * @todo configuration check that module for class is enabled
      */
     static function getClass($name, $args = [])
     {

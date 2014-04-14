@@ -93,7 +93,7 @@ class Core_Blue_Model_Object
             $data = $options;
         }
 
-        $this->initializeObject();
+        $this->initializeObject($data);
         if ($this->_options['indexKeyPrefix']) {
             $this->_integerKeyPrefix = $this->_options['indexKeyPrefix'];
         }
@@ -1076,10 +1076,12 @@ class Core_Blue_Model_Object
     }
 
     /**
-     * can be overwritten by children objects to start with some special
-     * operations
+     * can be overwritten by children objects to start with some special operations
+     * as parameter take data given to object by reference
+     * 
+     * @param mixed $data
      */
-    public function initializeObject(){}
+    public function initializeObject(&$data){}
 
     /**
      * can be overwritten by children objects to start with some special

@@ -49,6 +49,8 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     protected $_query;
 
     /**
+     * information about data type (object or collection)
+     * 
      * @var string
      */
     protected $_dataType;
@@ -248,21 +250,24 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     /**
      * load single row or all data from table
      * 
-     * @param mixed $id
+     * @param null|string|integer $id
      * @param null|string $column
-     * @return $this
-     * @todo other column select
+     * @return Core_Db_Model_Resource_Abstract
      */
     public function load($id = NULL, $column = NULL)
     {
         $message = 'load resource:' . $this->_tableName . ', ' . $id;
         Loader::tracer($message, debug_backtrace(), '000000');
-        Loader::callEvent('load_data_to_resource_before', [$this, $id]);
+        Loader::callEvent('load_data_to_resource_before', [$this, &$id, &$column]);
 
         $this->_query = 'SELECT * FROM ' . $this->_tableName;
-        if ($id) {
+
+        if ($id && !$column) {
             $this->where($this->_columnId . " = '$id'");
+        } else if ($id && $column) {
+            $this->where($column . " = '$id'");
         }
+
         $this->_applyWhere()->_applyOrder()->_applyPageSize();
 
         try {
@@ -401,6 +406,16 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     }
 
     /**
+     * return number of elements in collection
+     * 
+     * @return int
+     */
+    public function returnCollectionSize()
+    {
+        return $this->_collectionCounter;
+    }
+
+    /**
      * convert data saved in object to query string
      * 
      * @return string
@@ -428,7 +443,6 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
      * convert data saved in object to update query
      * 
      * @return string
-     * @todo collection handling
      */
     protected function _transformStructureToInsert()
     {
@@ -436,23 +450,32 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
         $data   = '';
         $query  = 'INSERT INTO ' . $this->_tableName . ' ';
 
-        foreach ($this->_tableStructure as $column) {
-            if ($this->getData($column['Field'])) {
-                $fields .= $column['Field'] . ',';
-                $data   .= '\'' . $this->getData($column['Field']) . '\',';
+        if ($this->_dataType === self::DATA_TYPE_OBJECT) {
+            foreach ($this->_tableStructure as $column) {
+                if ($this->getData($column['Field'])) {
+                    $fields .= $column['Field'] . ',';
+                    $data   .= '\'' . $this->getData($column['Field']) . '\',';
+                }
             }
-        }
 
-        $fields = rtrim($fields, ',');
-        $data   = rtrim($data, ',');
-        $query  .= '(' . $fields . ') VALUES (' . $data . ')';
+            $fields = rtrim($fields, ',');
+            $data   = rtrim($data, ',');
+            $query  .= '(' . $fields . ') VALUES (' . $data . ')';
+        } elseif ($this->_dataType === self::DATA_TYPE_COLLECTION) {
+            
+        }
 
         return $query;
     }
 
-    public function returnedRows()
+    /**
+     * prepare delete query
+     * 
+     * @return string
+     */
+    protected function _prepareDeleteQuery()
     {
-        
+        return 'DELETE FROM ' . $this->_tableName . ' ';
     }
 
     /**
@@ -479,6 +502,7 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
 
         try {
             $this->_applyWhere()->_executeQuery();
+            Loader::callEvent('save_resource_data_after', $this);
         } catch (Exception $e) {
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
@@ -486,7 +510,46 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
             Loader::exceptions($e, 'save error', 'database');
         }
 
-        Loader::callEvent('save_resource_data_after', $this);
+        return $this;
+    }
+
+    /**
+     * remove row loaded to object, or some other row with given id
+     * 
+     * @param null|string|integer $id
+     * @param null|string $column
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function delete($id = NULL, $column = NULL)
+    {
+        $message = 'delete resource:' . $this->_tableName;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent('delete_resource_data_before', [$this, &$id, &$column]);
+
+        if ($this->_dataType === self::DATA_TYPE_OBJECT) {
+            if (!$id) {
+                $id = $this->getData($this->_columnId);
+            }
+
+            if ($id && !$column) {
+                $this->where($this->_columnId . " = '$id'");
+            } else if ($id && $column) {
+                $this->where($column . " = '$id'");
+            }
+
+            $this->_prepareDeleteQuery();
+        }
+
+        try {
+            $this->_applyWhere()->_executeQuery();
+            Loader::callEvent('delete_resource_data_after', $this);
+        } catch (Exception $e) {
+            $this->_hasErrors       = TRUE;
+            $this->_errorsList[]    = $e->getMessage();
+            Loader::callEvent('delete_resource_data_error', [$this, $e]);
+            Loader::exceptions($e, 'delete error', 'database');
+        }
+
         return $this;
     }
 

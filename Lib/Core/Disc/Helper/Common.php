@@ -22,6 +22,9 @@ class Core_Disc_Helper_Common
      */
     static function delete($path)
     {
+        Loader::tracer('delete given path content', debug_backtrace(), '6802cf');
+        Loader::callEvent('delete_path_content_before', [&$path]);
+
         $bool = [];
 
         if(!file_exists($path)){
@@ -53,9 +56,11 @@ class Core_Disc_Helper_Common
         }
 
         if (in_array(FALSE, $bool)) {
+            Loader::callEvent('delete_path_content_error', [$bool, $path]);
             return FALSE;
         }
 
+        Loader::callEvent('delete_path_content_after', $path);
         return $bool;
     }
 
@@ -69,6 +74,9 @@ class Core_Disc_Helper_Common
      */
     static function copy($path, $target)
     {
+        Loader::tracer('copy given path content', debug_backtrace(), '6802cf');
+        Loader::callEvent('copy_path_content_before', [&$path, &$target]);
+
         $bool = [];
 
         if (!Core_Incoming_Model_File::exist($path)) {
@@ -101,6 +109,7 @@ class Core_Disc_Helper_Common
 
                 $bool = self::mkdir($target);
                 if ($bool) {
+                    Loader::callEvent('copy_path_content_error', [$path, $target]);
                     return NULL;
                 }
             }
@@ -109,9 +118,11 @@ class Core_Disc_Helper_Common
         }
 
         if (in_array(FALSE, $bool)) {
+            Loader::callEvent('copy_path_content_error', [$bool, $path, $target]);
             return FALSE;
         }
 
+        Loader::callEvent('copy_path_content_after', [$path, $target]);
         return TRUE;
     }
 
@@ -124,13 +135,18 @@ class Core_Disc_Helper_Common
      */
     static function mkdir($path)
     {
+        Loader::tracer('create directory', debug_backtrace(), '6802cf');
+        Loader::callEvent('create_directory_before', [&$path]);
+
         $bool = preg_match(self::RESTRICTED_SYMBOLS, $path);
 
         if (!$bool) {
             $bool = mkdir ($path);
+            Loader::callEvent('create_directory_after', $path);
             return $bool;
         }
 
+        Loader::callEvent('create_directory_error', $path);
         return FALSE;
     }
 
@@ -146,8 +162,11 @@ class Core_Disc_Helper_Common
      */
     static function mkfile($path, $fileName, $data = NULL)
     {
+        Loader::tracer('create file', debug_backtrace(), '6802cf');
+        Loader::callEvent('create_file_before', [&$path, &$fileName, &$data]);
+
         if (!Core_Incoming_Model_File::exist($path)) {
-            return NULL;
+            self::mkdir($path);
         }
 
         $bool = preg_match(self::RESTRICTED_SYMBOLS, $fileName);
@@ -158,10 +177,12 @@ class Core_Disc_Helper_Common
 
             if ($data) {
                 $bool = file_put_contents("$path/$fileName", $data);
+                Loader::callEvent('create_file_after', [$path, $fileName]);
                 return $bool;
             }
         }
 
+        Loader::callEvent('create_file_error', [$path, $fileName]);
         return FALSE;
     }
 
@@ -169,46 +190,59 @@ class Core_Disc_Helper_Common
      * change name of file/directory
      * also can be used to copy operation
      *
-     * @param string $path original path or name
+     * @param string $source original path or name
      * @param string $target new path or name
      * @return boolean information that operation was successfully, or NULL if path incorrect
      */
-    static function rename($path, $target)
+    static function rename($source, $target)
     {
-        if (!file_exists($path)) {
+        Loader::tracer('rename file or directory', debug_backtrace(), '6802cf');
+        Loader::callEvent('rename_file_or_directory_before', [&$source, &$target]);
+
+        if (!Core_Incoming_Model_File::exist($source)) {
+            Loader::callEvent('rename_file_or_directory_error', [$source, 'source']);
             return NULL;
         }
 
         if (Core_Incoming_Model_File::exist($target)) {
+            Loader::callEvent('rename_file_or_directory_error', [$target, 'target']);
             return FALSE;
         }
 
         $bool = preg_match(self::RESTRICTED_SYMBOLS, $target);
 
         if (!$bool) {
-            $bool = rename($path, $target);
+            $bool = rename($source, $target);
+            Loader::callEvent('rename_file_or_directory_after', [$source, $target]);
             return $bool;
         }
 
+        Loader::callEvent('rename_file_or_directory_error', [$source, $target]);
         return FALSE;
     }
 
     /**
      * move file or directory to given target
      *
-     * @param string $path
+     * @param string $source
      * @param string $target
      * @return bool
      */
-    static function move($path, $target)
+    static function move($source, $target)
     {
-        $bool = self::copy($path, $target);
+        Loader::tracer('move file or directory', debug_backtrace(), '6802cf');
+        Loader::callEvent('move_file_or_directory_before', [&$source, &$target]);
+        $bool = self::copy($source, $target);
 
         if (!$bool) {
+            Loader::callEvent('move_file_or_directory_error', [$source, $target]);
             return FALSE;
         }
 
-        return self::delete($path);
+        $bool = self::delete($source);
+        Loader::callEvent('move_file_or_directory_after', [$source, $target, $bool]);
+
+        return $bool;
     }
 
     /**
@@ -223,6 +257,7 @@ class Core_Disc_Helper_Common
      */
     static function readDirectory($path = NULL, $whole = FALSE)
     {
+        Loader::tracer('read directory', debug_backtrace(), '6802cf');
         $list = [];
 
         if (!$path) {

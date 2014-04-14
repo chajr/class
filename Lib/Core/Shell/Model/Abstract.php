@@ -5,6 +5,7 @@
  * @package     Core
  * @subpackage  Shell
  * @author      chajr <chajr@bluetree.pl>
+ * @todo read some config from shell ini file (without usage main configuration file)
  */
 abstract class Core_Shell_Model_Abstract
 {
@@ -202,8 +203,8 @@ abstract class Core_Shell_Model_Abstract
      */
     protected function _showHelp()
     {
-        $helpShort  = isset($this->_arguments['h']);
-        $helpLong   = isset($this->_arguments['help']);
+        $helpShort  = isset($this->_arguments['-h']);
+        $helpLong   = isset($this->_arguments['--help']);
 
         if ($helpShort || $helpLong) {
             echo $this->usageHelp();
@@ -467,7 +468,7 @@ abstract class Core_Shell_Model_Abstract
 Usage:  php -f script.php -- [options]
 
     -h            Short alias for help
-    help          This help
+    --help        This help
 
 ------------------------------
 

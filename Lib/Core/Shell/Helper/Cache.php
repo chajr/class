@@ -151,7 +151,7 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
 
     Usage:  php clear_cache.php [options]
 
-    help or h            This help
+    --help or -h         This help
 
     --all                remove all cache
 

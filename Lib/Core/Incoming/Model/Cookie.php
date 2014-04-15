@@ -18,7 +18,7 @@ class Core_Incoming_Model_Cookie extends Core_Blue_Model_Object
         Loader::tracer('start cookie class', debug_backtrace(), '213A59');
         Loader::callEvent('initialize_cookie_object_before', $this);
 
-        $this->initializeObject();
+        $this->initializeObject($cookie);
         $this->_DATA = &$cookie;
         $this->afterInitializeObject();
 

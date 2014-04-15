@@ -17,8 +17,8 @@ class Core_Incoming_Model_Session extends Core_Blue_Model_Object
     {
         Loader::tracer('start session class', debug_backtrace(), '374557');
         Loader::callEvent('initialize_session_object_before', $this);
-        
-        $this->initializeObject();
+
+        $this->initializeObject($session);
         $this->_DATA = &$session;
         $this->afterInitializeObject();
 

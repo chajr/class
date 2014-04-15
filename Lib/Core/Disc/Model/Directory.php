@@ -2,46 +2,77 @@
 /**
  * allow to manage directory as object
  *
- * @category    BlueFramework
- * @package     dics
- * @subpackage  file
- * @author      Michał Adamiak    <chajr@bluetree.pl>
- * @copyright   chajr/bluetree
- * @version     0.5.0
+ * @package     Core
+ * @subpackage  Disc
+ * @author      chajr <chajr@bluetree.pl>
  */
-class folder_class
-    extends disc_class
+class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_Disc_Model_Interface
 {
-    /**
-     * list of founded inside directory elements
-     * @var
-     */
-    public $elements;
-
-    /**
-     * directory size ik bytes
-     * @var
-     */
-    public $size;
-
+    //trzymac obiekt w pamieci, tworzy przy wywolaniu save
+    //trzyma wszystkie podfoldery jako obiekty i tak samo pliki
+    
+    protected $_directoryData = [
+        'main_path'             => '',
+        'child_files'           => [],
+        'child_directories'     => [],
+        'size'                  => 0,
+        'file_count'            => 0,
+        'directory_count'       => 0,
+        'to_delete'             => [],
+        'permisions'            => 0755,
+        'at_time'               => NULL,
+        'ct_time'               => NULL,
+        'mt_time'               => NULL,
+        'owner'                 => '',
+    ];
+    
     /**
      * create or read given directory
      *
-     * @param $path
+     * @param $data
+     * @return Core_Disc_Model_Directory
      */
-    public function __construct($path)
+    public function __construct(array $data)
     {
-        if (!file_exists($path)) {
-            //create directory
+        $data = array_merge($this->_directoryData, $data);
+        parent::__construct($data);
+    }
+
+    public function save()
+    {
+        $exists = Core_Incoming_Model_File::exist($this->getMainPath());
+        
+        if (!$exists) {
+            Core_Disc_Helper_Common::mkdir($this->getMainPath());
         } else {
-            //read directory
+            
         }
     }
 
+    public function addChildFile($name, $content = NULL)
+    {
+        
+    }
+
+    public function addChildDirectory($name)
+    {
+        
+    }
+
+    public function load()
+    {
+        
+    }
+
+    public function delete()
+    {
+        
+    }
+
     /**
      *
      */
-    public function deleteDirectory()
+    public function move($destination)
     {
 
     }
@@ -49,15 +80,22 @@ class folder_class
     /**
      *
      */
-    public function moveDirectory()
+    public function rename($newName)
     {
 
     }
 
-    /**
-     *
-     */
-    public function renameDirectory()
+    public function copy($destination)
+    {
+        
+    }
+
+    public function _readContent($recursive = FALSE)
+    {
+        
+    }
+
+    public function setPermissions($permissions)
     {
 
     }

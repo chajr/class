@@ -93,8 +93,7 @@ class Loader
         }
 
         if (!file_exists(CORE_TEMP)) {
-            @file_put_contents(CORE_TEMP, '');
-            @chmod(CORE_TEMP, 0777);
+            @mkdir(CORE_TEMP, 0777);
         }
 
         return $this;

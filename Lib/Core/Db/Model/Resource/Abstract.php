@@ -7,7 +7,9 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
+class Core_Db_Model_Resource_Abstract
+    extends Core_Blue_Model_Object
+    implements Core_Db_Model_Resource_Interface
 {
     const TABLE_STRUCTURE_CACHE_PREFIX  = 'table_structure_';
     const DATA_TYPE_COLLECTION          = 'collection';
@@ -303,23 +305,26 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
 
     /**
      * return data of first element in collection
+     * default return as array, but can return as blue object
      * 
-     * @return mixed|null
+     * @param bool $asObject
+     * @return Core_Blue_Model_Object|mixed|null
      */
-    public function returnFirstItem()
+    public function returnFirstItem($asObject = FALSE)
     {
-        return $this->returnRow(0);
+        return $this->returnRow(0, $asObject);
     }
 
     /**
      * return last element in collection
      * 
-     * @return mixed|null
+     * @param bool $asObject
+     * @return Core_Blue_Model_Object|mixed|null
      */
-    public function returnLastItem()
+    public function returnLastItem($asObject = FALSE)
     {
         $index = $this->_rows -1;
-        return $this->returnRow($index);
+        return $this->returnRow($index, $asObject);
     }
 
     /**
@@ -339,15 +344,20 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
     /**
      * return row with given index
      * 
-     * @param $rowIndex
-     * @return mixed|null
+     * @param integer $rowIndex
+     * @param bool $asObject
+     * @return Core_Blue_Model_Object|Core_Db_Model_Resource_Abstract|mixed|null
      */
-    public function returnRow($rowIndex)
+    public function returnRow($rowIndex, $asObject = FALSE)
     {
         if ($this->_dataType === self::DATA_TYPE_COLLECTION) {
             $key = $this->_integerToStringKey($rowIndex);
             /** @var Core_Blue_Model_Object $object */
             $object = $this->getData($key);
+
+            if ($object instanceof Core_Blue_Model_Object && $asObject) {
+                return $object;
+            }
 
             if ($object instanceof Core_Blue_Model_Object) {
                 return $object->getData();
@@ -356,6 +366,9 @@ class Core_Db_Model_Resource_Abstract extends Core_Blue_Model_Object
             return NULL;
         }
 
+        if ($asObject) {
+            return $this;
+        }
         return $this->getData();
     }
 

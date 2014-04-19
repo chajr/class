@@ -27,7 +27,7 @@ class Core_Disc_Helper_Common
 
         $bool = [];
 
-        if(!file_exists($path)){
+        if(!Core_Incoming_Model_File::exist($path)){
             return NULL;
         }
 

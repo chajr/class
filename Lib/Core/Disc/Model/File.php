@@ -21,7 +21,6 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         'at_time'               => NULL,
         'ct_time'               => NULL,
         'mt_time'               => NULL,
-        'owner'                 => '',
         'content'               => '',
         'name'                  => '',
         'extension'             => '',
@@ -56,7 +55,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         Loader::callEvent('delete_file_object_instance_before', $this);
 
         if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
-            $bool  = Core_Disc_Helper_Common::delete($this->_getFullPath());
+            $bool = Core_Disc_Helper_Common::delete($this->_getFullPath());
 
             if (!$bool) {
                 Loader::callEvent('delete_file_object_instance_error', $this);
@@ -64,7 +63,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
             }
         }
 
-        $this->setData([]);
+        $this->unsetData();
         Loader::callEvent('delete_file_object_instance_after', $this);
         return $this;
     }
@@ -95,14 +94,13 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
             $this->_getFullName(),
             $this->getContent()
         );
-        
-        //ustawienie czasu modyfikacji itp
 
         @chmod($this->_getFullPath(), $this->getPermissions());
+        $this->_updateFileInfo();
 
         if (!$bool) {
             Loader::callEvent('save_file_object_instance_error', $this);
-            throw new Exception ('save file: ' . $this->_getFullPath());
+            throw new Exception ('unable to save file: ' . $this->_getFullPath());
         }
 
         Loader::callEvent('save_file_object_instance_after', $this);
@@ -117,7 +115,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      */
     public function load()
     {
-        Loader::tracer('load file object instance', debug_backtrace(), '6802cf');
+        Loader::tracer('load file into object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('load_file_object_instance_before', $this);
 
         if (!Core_Incoming_Model_File::exist($this->_getFullPath())) {
@@ -126,6 +124,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         }
 
         $content = file_get_contents($this->_getFullPath());
+        $this->_updateFileInfo();
         $this->setContent($content);
 
         Loader::callEvent('load_file_object_instance_after', $this);
@@ -139,7 +138,8 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      */
     protected function _getFullPath()
     {
-        return $this->getMainPath() . $this->_getFullName();
+        $mainPath = rtrim($this->getMainPath(), '/');
+        return $mainPath . '/' . $this->_getFullName();
     }
 
     /**
@@ -149,18 +149,30 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      */
     protected function _getFullName()
     {
-        return $this->getName() . '.' . $this->getExtension();
+        if ($this->getExtension()) {
+            return $this->getName() . '.' . $this->getExtension();
+        }
+
+        return $this->getName();
     }
 
     /**
      * move file to other location
      *
-     * @param $destination
+     * @param string $destination
+     * @throws Exception
+     * @return Core_Disc_Model_File
      */
     public function move($destination){
+        Loader::tracer('move file object instance', debug_backtrace(), '6802cf');
+        Loader::callEvent('move_file_object_instance_before', [$this, &$destination]);
+
         if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
             $targetPath = $destination . $this->_getFullName();
-            $bool = Core_Disc_Helper_Common::move($this->_getFullPath(), $targetPath);
+            $bool       = Core_Disc_Helper_Common::move(
+                $this->_getFullPath(),
+                $targetPath
+            );
         } else {
             $bool = Core_Disc_Helper_Common::mkfile(
                 $destination,
@@ -170,6 +182,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         }
 
         if (!$bool) {
+            Loader::callEvent('move_file_object_instance_error', [$this, $destination]);
             throw new Exception (
                 'unable to move file:'
                 . $this->_getFullPath()
@@ -178,21 +191,33 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
             );
         }
 
-        $this->_setFileTimes();
         $this->setMainPath($destination);
+        $this->_updateFileInfo();
         $this->replaceDataArrays();
 
+        Loader::callEvent('move_file_object_instance_after', $this);
         return $this;
     }
 
     /**
+     * copy file to other location
+     * !!!! AFTER COPY RETURN INSTANCE OF COPIED FILE, NOT BASE FILE !!!!
      * 
+     * @param string $destination
+     * @return Core_Disc_Model_File
+     * @throws Exception
      */
     public function copy($destination)
     {
+        Loader::tracer('copy file object instance', debug_backtrace(), '6802cf');
+        Loader::callEvent('copy_file_object_instance_before', [$this, &$destination]);
+
         if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
             $targetPath = $destination . $this->_getFullName();
-            Core_Disc_Helper_Common::copy($this->_getFullPath(), $targetPath);
+            $bool       = Core_Disc_Helper_Common::copy(
+                $this->_getFullPath(),
+                $targetPath
+            );
         } else {
             $bool = Core_Disc_Helper_Common::mkfile(
                 $destination,
@@ -201,61 +226,93 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
             );
         }
 
-        if ($bool) {
-            $data = $this->getData();
-            $data['main_path'] = $destination;
-            //ustawianie czasu zapisu itp
-            /** @var Core_Disc_Model_File $dir */
-            return Loader::getClass('Core_Disc_Model_File', $data);
+        if (!$bool) {
+            Loader::callEvent('copy_file_object_instance_error', [$this, $destination]);
+            throw new Exception (
+                'unable to copy file:'
+                . $this->_getFullPath()
+                . ' -> '
+                . $destination
+            );
         }
-        return FALSE;
-    }
 
-    public function putContent()
-    {
-        
-    }
+        $data               = $this->getData();
+        $data['main_path']  = $destination;
+        $this->_updateFileInfo();
 
-    public function replaceContent()
-    {
-        
-    }
-
-    public function rename($newName)
-    {
-        
-    }
-
-    public function setPermissions($permissions)
-    {
-        
+        Loader::callEvent('copy_file_object_instance_after', [$this]);
+        return Loader::getClass('Core_Disc_Model_File', $data)->load();
     }
 
     /**
-     * set file modification time
+     * rename file
+     * 
+     * @param string $name
+     * @param null|string $extension
+     * @return Core_Disc_Model_File
+     * @throws Exception
+     */
+    public function rename($name, $extension = NULL)
+    {
+        Loader::tracer('rename file object instance', debug_backtrace(), '6802cf');
+        Loader::callEvent('rename_file_object_instance_before', [$this, &$name, &$extension]);
+
+        $bool = TRUE;
+
+        if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
+            $bool = Core_Disc_Helper_Common::move(
+                $this->_getFullPath(),
+                $name . '.' . $extension
+            );
+        }
+
+        $this->setName($name);
+        $this->setExtension($extension);
+
+        if (!$bool) {
+            Loader::callEvent('rename_file_object_instance_error', [$this, $name, $extension]);
+            throw new Exception (
+                'unable to rename file:'
+                . $this->_getFullPath()
+                . ' -> '
+                . $name . '.' . $extension
+            );
+        }
+
+        $this->_updateFileInfo();
+        $this->replaceDataArrays();
+
+        Loader::callEvent('rename_file_object_instance_after', $this);
+        return $this;
+    }
+
+    /**
+     * set file information at real existing file
      * 
      * @return Core_Disc_Model_File
      */
-    protected function _setFileTimes()
+    protected function _updateFileInfo()
     {
-//        $time = time();
-        
-        
-        //odczytywane po operacji na pliku (realnym save load itp)
-
-//        if ($types & Core_Disc_Model_Interface::ACCESS_TIME) {
-//            $this->setAtTime($time);
-//        }
-//
-//        if ($types & Core_Disc_Model_Interface::CHANGE_TIME) {
-//            $this->setCtTime($time);
-//        }
-//
-//        if ($types & Core_Disc_Model_Interface::MODIFICATION_TIME) {
-//            $this->setMtTime($time);
-//        }
+        $info = new SplFileInfo($this->_getFullPath());
+        $this->setAtTime($info->getATime());
+        $this->setMtTime($info->getMTime());
+        $this->setCtTime($info->getCTime());
+        $this->setSize($info->getSize());
+        $this->setPermissions($info->getPerms());
 
         return $this;
+    }
+
+    /**
+     * return content size in bytes
+     * 
+     * @return integer
+     */
+    public function getSize()
+    {
+        $size = mb_strlen($this->getContent(), '8bit');
+        $this->setSize($size);
+        return $size;
     }
 
     /**

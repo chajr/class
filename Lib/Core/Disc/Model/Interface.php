@@ -14,5 +14,4 @@ interface Core_Disc_Model_Interface
     public function move($destination);
     public function copy($destination);
     public function rename($newName);
-    public function setPermissions($permissions);
 }

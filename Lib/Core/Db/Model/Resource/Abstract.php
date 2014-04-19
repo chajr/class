@@ -796,4 +796,14 @@ class Core_Db_Model_Resource_Abstract
         $this->_pageSize = $pageSize;
         return $this;
     }
+
+    /**
+     * return number of returned from database rows
+     * 
+     * @return int
+     */
+    public function returnLoadedRows()
+    {
+        return $this->_rows;
+    }
 }

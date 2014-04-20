@@ -13,6 +13,13 @@ spl_autoload_register('Loader::loadClass');
 class Loader
 {
     /**
+     * allow to turn off events handling
+     *
+     * @var bool
+     */
+    public static $skipEvents = FALSE;
+
+    /**
      * @var Core_Blue_Model_Configuration
      */
     protected static $_configuration;
@@ -411,6 +418,10 @@ class Loader
      */
     static function callEvent($name, $data = [])
     {
+        if (self::$skipEvents) {
+            return;
+        }
+
         /** @var Core_Blue_Model_Object $events */
         $events = Loader::getConfiguration()->getEvents();
 

@@ -1,0 +1,18 @@
+{
+    "name":         "chajr/class",
+    "description":  "simply helper classes",
+    "version":      "0.15.2",
+    "type":         "library",
+    "time":         "2014-04-20",
+    "autors": [
+        {
+            "name":     "Michał Adamiak (chajr)",
+            "email":    "chajr@bluetree.pl",
+            "homepage": "http://bluetree.pl",
+            "role":     "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    }
+}

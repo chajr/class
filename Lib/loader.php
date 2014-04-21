@@ -263,6 +263,10 @@ class Loader
         if ($moduleExist && $fileExist) {
             include_once $fullPath;
         } else {
+            if (!$moduleExist) {
+                throw new Exception ('Module is disabled: ' . $fullPath);
+            }
+
             throw new Exception ('Class file is missing: ' . $fullPath);
         }
     }

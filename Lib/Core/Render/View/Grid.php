@@ -39,14 +39,18 @@ class Core_Render_View_Grid extends Core_Render_View_Abstract
      */
     public function render()
     {
-        $data = $this->_options['data'];
+        Loader::tracer('start grid rendering', debug_backtrace(), '006800');
+        Loader::callEvent('render_grid_object_before', $this);
 
+        $data = $this->_options['data'];
         if (empty($data)) {
             return '';
         }
 
         $renderedContent = [];
         foreach ($data as $row) {
+            $this->changeRowData($row);
+
             /** @var Core_Render_View_Abstract $renderer */
             $renderer = Loader::getClass(
                 'Core_Render_View_Abstract', [
@@ -58,6 +62,7 @@ class Core_Render_View_Grid extends Core_Render_View_Abstract
             $renderedContent[] = $renderer->render();
         }
 
+        Loader::callEvent('render_grid_object_after', $this);
         return implode($this->_contentGlue, $renderedContent);
     }
 
@@ -75,4 +80,11 @@ class Core_Render_View_Grid extends Core_Render_View_Abstract
 
         return $row;
     }
+
+    /**
+     * allow to change row data before rendering
+     * 
+     * @param array $row
+     */
+    public function changeRowData(&$row){}
 }

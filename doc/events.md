@@ -90,3 +90,5 @@ delete_directory_object_instance_after
 save_directory_object_instance_before
 save_directory_object_instance_error
 save_directory_object_instance_after
+render_grid_object_before
+render_grid_object_after

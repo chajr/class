@@ -55,7 +55,7 @@ class Core_Db_Model_Resource_Abstract
      * 
      * @var string
      */
-    protected $_dataType;
+    protected $_dataType = self::DATA_TYPE_OBJECT;
 
     /**
      * number of returned from database rows

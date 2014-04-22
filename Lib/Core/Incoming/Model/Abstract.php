@@ -70,10 +70,15 @@ class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
         foreach ((array)$data as $key => $val) {
             try {
                 $this->_checkKey($key);
-                $this->_DATA[$key] = $val;
+                $key                = $this->_validateByKeyName($key, $val);
+                $this->_DATA[$key]  = $val;
             } catch (Exception $e) {
                 Loader::log('invalid_key', $key . '=>' . $val, 'invalid key');
             }
+        }
+
+        if ($this->hasErrors()) {
+            Loader::log('security', $this->_errorsList, 'non validate data');
         }
 
         return $this;
@@ -135,5 +140,44 @@ class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
                 'Invalid parameter key: ' . $key . ' - rewrite: ' . $expression
             );
         }
+    }
+
+    /**
+     * check that input value is correct with given in input name pattern
+     * 
+     * @param string $key
+     * @param mixed $value
+     * @return string
+     */
+    protected function _validateByKeyName($key, $value)
+    {
+        /** @var Core_Blue_Model_Object $config */
+        $config     = Loader::getConfiguration()->getSecure();
+        $matches    = [];
+
+        if ($config->getUseInputPatterns()) {
+            preg_match_all($config->getInputPattern(), $key, $matches);
+
+            foreach ($matches[0] as $validator) {
+                $validatorKey   = str_replace('--', '', $validator);
+                $valid          = Core_Blue_Helper_Validator::valid($value, $validatorKey);
+
+                if (!$valid) {
+                    $this->_hasErrors           = TRUE;
+                    $this->_errorsList[$key]    = [
+                        'validator' => $validatorKey,
+                        'value'     => $value,
+                        'pattern'   => Core_Blue_Helper_Validator::$regularExpressions[$validatorKey]
+                    ];
+                }
+            }
+
+            if ($config->getClearInputName()) {
+                preg_match($config->getClearInputPattern(), $key, $match);
+                $key = str_replace($match, '', $key);
+            }
+        }
+
+        return $key;
     }
 }

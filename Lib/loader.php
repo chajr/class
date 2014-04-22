@@ -295,11 +295,7 @@ class Loader
         $instance       = self::$_register->getData($instanceCode);
 
         if (!$instance) {
-            try {
-                $instance = self::$_register->setObject($class, $instanceCode, $args);
-            } catch (Exception $e) {
-                self::exceptions($e);
-            }
+            $instance = self::$_register->setObject($class, $instanceCode, $args);
         }
 
         return $instance;
@@ -326,12 +322,7 @@ class Loader
     static function getClass($name, $args = [])
     {
         Loader::tracer('create object', debug_backtrace(), '008e85');
-
-        try {
-            return new $name($args);
-        } catch (Exception $e) {
-            self::exceptions($e);
-        }
+        return new $name($args);
     }
 
     /**
@@ -361,6 +352,17 @@ class Loader
         if (is_array($message)) {
             $information = '';
             foreach ($message as $key => $value) {
+
+                if (is_array($value)) {
+                    $newValue = "\n";
+
+                    foreach ($value as $valueKey => $description) {
+                        $newValue .=  "    - $valueKey: $description\n";
+                    }
+
+                    $value = $newValue;
+                }
+
                 $information .= "- $key: $value\n";
             }
             $message = $information;

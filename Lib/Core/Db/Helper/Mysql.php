@@ -123,6 +123,11 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
      */
     private function _query($sql)
     {
+        if (empty($sql)) {
+            $this->err = 'Empty query';
+            return;
+        }
+
         /** @var Core_Db_Helper_Connection_Mysql $connection */
         $connection = Core_Db_Helper_Connection_Mysql::$connections[$this->_connection];
         $bool       = $connection->query($sql);

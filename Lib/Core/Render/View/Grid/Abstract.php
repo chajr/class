@@ -54,13 +54,17 @@ abstract class Core_Render_View_Grid_Abstract extends Core_Render_View_Abstract
         foreach ($data as $row) {
             $this->changeRowData($row);
 
-            /** @var Core_Render_View_Abstract $renderer */
+            /** @var Core_Render_View_Grid_Row $renderer */
             $renderer = Loader::getClass(
-                'Core_Render_View_Abstract', [
-                    'template'  => $this->_options['template'],
-                    'data'      => $this->_getDataFromFow($row)
+                'Core_Render_View_Grid_Row', [
+                    'template'      => $this->_options['template'],
+                    'module'        => $this->_options['module'],
+                    'data'          => $this->_getDataFromFow($row),
+                    'cache'         => FALSE,
+                    'cache_data'    => FALSE,
                 ]
             );
+
             $renderer->setClearMarkers($this->getClearMarkers());
             $renderedContent[] = $renderer->render();
         }

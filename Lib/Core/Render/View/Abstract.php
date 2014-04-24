@@ -456,7 +456,7 @@ abstract class Core_Render_View_Abstract
         Loader::callEvent('render_template_before', $this);
 
         $cache = $this->_templateCache(NULL, 'data');
-        if ($cache && $this->_options['cache']) {
+        if ($cache && $this->_options['cache_data']) {
             $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $cache);
 
             Loader::callEvent('render_template_after', [$this, &$cache]);

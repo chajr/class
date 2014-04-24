@@ -5,11 +5,14 @@
  * @package     Core
  * @subpackage  Render
  * @author      chajr <chajr@bluetree.pl>
- * @todo cache template before replace markers
  */
-class Core_Render_View_Abstract
+abstract class Core_Render_View_Abstract
 {
-    const MAIN_TEMPLATE_KEY_NAME = 'main_template';
+    const MAIN_TEMPLATE_KEY_NAME    = 'main_template';
+    const CORE_SKIN_DIRECTORY       = 'core/default';
+    const SKIN_DEFAULT              = 'default';
+    const CACHE_SUFFIX              = '_templates';
+    const CACHE_DATA_SUFFIX         = '_templates_data';
 
     /**
      * string used to join many content for one marker
@@ -47,25 +50,38 @@ class Core_Render_View_Abstract
 
     /**
      * session object
+     * 
      * @var Core_Incoming_Model_Session
      */
     protected $_session = NULL;
 
     /**
      * allow to remove or not unused markers
+     * 
      * @var boolean
      */
     protected $_clearMarkers = TRUE;
 
     /**
+     * list of templates
+     * 
      * @var Core_Blue_Model_Object
      */
     protected $_templates;
 
     /**
+     * content markers
+     * 
      * @var Core_Blue_Model_Object
      */
     protected $_markers;
+
+    /**
+     * name for cache file
+     * 
+     * @var string
+     */
+    protected $_cacheName;
 
     /**
      * default constructor options
@@ -73,8 +89,11 @@ class Core_Render_View_Abstract
      * @var array
      */
     protected $_options = [
-        'template'  => '',
-        'data'      => NULL
+        'template'      => '',
+        'data'          => NULL,
+        'module'        => NULL,
+        'cache'         => TRUE,
+        'cache_data'    => FALSE,
     ];
 
     /**
@@ -99,10 +118,110 @@ class Core_Render_View_Abstract
         $this->_session     = Loader::getObject('SESSION');
         $this->_templates   = Loader::getClass('Core_Blue_Model_Object');
         $this->_markers     = Loader::getClass('Core_Blue_Model_Object', $newData);
+
+        $this->_setCacheName();
         $this->_createMainLayout($template);
 
         $this->afterInitializeBlock();
         Loader::callEvent('initialize_block_abstract_object_after', $this);
+    }
+
+    /**
+     * return cache class name or full cache name
+     * 
+     * @param string $suffix
+     * @return string
+     */
+    public function getCacheName($suffix = '')
+    {
+        if ($suffix === 'template') {
+            $suffix = self::CACHE_SUFFIX;
+        }
+
+        if ($suffix === 'data') {
+            $suffix = self::CACHE_DATA_SUFFIX;
+        }
+
+        return $this->_cacheName . $suffix;
+    }
+
+    /**
+     * set up cache name from class using view_abstract
+     * 
+     * @return Core_Render_View_Abstract
+     */
+    protected function _setCacheName()
+    {
+        $this->_cacheName = strtolower(get_class($this));
+        return $this;
+    }
+
+    /**
+     * cascade search in skin directory for template
+     * if template was not found log information and return NULL
+     * 
+     * @param string $template
+     * @return null|string
+     */
+    protected function _prepareTemplateUrl($template)
+    {
+        $currentSkinMod         = '';
+        $currentSkinDefaultMod  = '';
+        $skinDefaultMod         = '';
+
+        $rendererConfig         = Loader::getConfiguration()->getDesign();
+        $package                = $rendererConfig->getSkinPackage();
+        $template               = '/' . $template;
+
+        $currentSkin            = $package . '/' . $rendererConfig->getSkinView() . $template;
+        $currentSkinDefault     = $package . '/' . self::SKIN_DEFAULT . $template;
+        $skinDefault            = self::CORE_SKIN_DIRECTORY . $template;
+
+        if ($this->_options['module']) {
+            $modulePath             = Loader::name2path($this->_options['module'], FALSE);
+            $currentSkinMod         = CORE_LIB . $modulePath . '/Skin/' . $currentSkin;
+            $currentSkinDefaultMod  = CORE_LIB . $modulePath . '/Skin/' . $currentSkinDefault;
+            $skinDefaultMod         = CORE_LIB . $modulePath . '/Skin/' . $skinDefault;
+        }
+
+        $currentSkinCore        = CORE_SKIN . $currentSkin;
+        $currentSkinDefaultCore = CORE_SKIN . $currentSkinDefault;
+        $skinDefaultCore        = CORE_SKIN . $skinDefault;
+
+        switch (TRUE) {
+            case Core_Incoming_Model_File::exist($currentSkinMod):
+                return $currentSkinMod;
+
+            case Core_Incoming_Model_File::exist($currentSkinDefaultMod):
+                return $currentSkinDefaultMod;
+
+            case Core_Incoming_Model_File::exist($skinDefaultMod):
+                return $skinDefaultMod;
+
+            case Core_Incoming_Model_File::exist($currentSkinCore):
+                return $currentSkinCore;
+
+            case Core_Incoming_Model_File::exist($currentSkinDefaultCore):
+                return $currentSkinDefaultCore;
+
+            case Core_Incoming_Model_File::exist($skinDefaultCore):
+                return $skinDefaultCore;
+
+            default:
+                Loader::log(
+                    'warning',
+                    [
+                        $currentSkinMod,
+                        $currentSkinDefaultMod,
+                        $skinDefaultMod,
+                        $currentSkinCore,
+                        $currentSkinDefaultCore,
+                        $skinDefaultCore,
+                    ],
+                    'missing template'
+                );
+                return NULL;
+        }
     }
 
     /**
@@ -164,11 +283,26 @@ class Core_Render_View_Abstract
         Loader::tracer('create main layout for block', debug_backtrace(), '006400');
         Loader::callEvent('create_main_layout_before', [$this, &$template]);
 
-        $content = $this->_checkTemplatePath($template);
-        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
-        $this->_external(self::MAIN_TEMPLATE_KEY_NAME);
+        $cache = $this->_templateCache();
+        if ($cache && $this->_options['cache']) {
+            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $cache);
 
-        Loader::callEvent('create_main_layout_after', $this);
+            Loader::callEvent('create_main_layout_after', [$this, $template]);
+            return $this;
+        }
+
+        $template = $this->_prepareTemplateUrl($template);
+
+        if ($template) {
+            $content = $this->_getTemplateContent($template);
+            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
+            $this->_external();
+            $this->_templateCache(
+                $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME)
+            );
+        }
+
+        Loader::callEvent('create_main_layout_after', [$this, $template]);
         return $this;
     }
 
@@ -178,24 +312,23 @@ class Core_Render_View_Abstract
      * @param string $template
      * @return string
      */
-    protected function _checkTemplatePath($template)
+    protected function _getTemplateContent($template)
     {
         Loader::tracer('create path for required template', debug_backtrace(), '006400');
         Loader::callEvent('load_template_content_before', [$this, &$template]);
 
-        $content        = $this->_contentMarkers['empty'];
-        $templateExists = file_exists($template);
-        if ($templateExists) {
-            $content =  file_get_contents($template);
-        } else {
-            Loader::log('warning', $template, 'missing template');
+        $content =  file_get_contents($template);
+        if (empty($content)) {
+            $content        = $this->_contentMarkers['empty'];
+            Loader::log('warning', $template, 'empty template content');
         }
 
         Loader::callEvent('load_template_content_after', [
             $this,
             &$content,
-            $templateExists
+            $template
         ]);
+
         return $content;
     }
 
@@ -203,15 +336,14 @@ class Core_Render_View_Abstract
      * load external templates to main template,
      * or some external templates to module template
      *
-     * @param string $template module name that want to load external template
      * @return Core_Render_View_Abstract
      */
-    protected function _external($template)
+    protected function _external()
     {
         Loader::tracer('load external template', debug_backtrace(), '006400');
 
         $list           = [];
-        $baseContent    = $this->_templates->getData($template);
+        $baseContent    = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
 
         preg_match_all(
             $this->_contentMarkers['external'],
@@ -221,8 +353,7 @@ class Core_Render_View_Abstract
 
         foreach ($list[0] as $externalTemplate) {
 
-            $newTemplate  = CORE_LIB;
-            $newTemplate .= str_replace(
+            $newTemplate = str_replace(
                 [
                     $this->_contentMarkers['external_start'],
                     $this->_contentMarkers['marker_end']
@@ -231,14 +362,18 @@ class Core_Render_View_Abstract
                 $externalTemplate
             );
 
-            $content    = $this->_checkTemplatePath($newTemplate . '.html');
-            $newContent = str_replace(
-                $externalTemplate,
-                $content,
-                $baseContent
-            );
+            $newTemplate = $this->_prepareTemplateUrl($newTemplate . '.html');
 
-            $this->_templates->setData($template, $newContent);
+            if ($newTemplate) {
+                $content    = $this->_getTemplateContent($newTemplate);
+                $newContent = str_replace(
+                    $externalTemplate,
+                    $content,
+                    $baseContent
+                );
+
+                $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $newContent);
+            }
         }
 
         return $this;
@@ -320,6 +455,14 @@ class Core_Render_View_Abstract
         Loader::tracer('render content of display class', debug_backtrace(), '006400');
         Loader::callEvent('render_template_before', $this);
 
+        $cache = $this->_templateCache(NULL, 'data');
+        if ($cache && $this->_options['cache']) {
+            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $cache);
+
+            Loader::callEvent('render_template_after', [$this, &$cache]);
+            return $cache;
+        }
+
         try {
             $this->_joinTemplates();
             $this->_renderMarkers();
@@ -330,6 +473,7 @@ class Core_Render_View_Abstract
         }
 
         $finalContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+        $this->_templateCache($finalContent, 'data');
 
         Loader::callEvent('render_template_after', [$this, &$finalContent]);
         return $finalContent;
@@ -341,25 +485,32 @@ class Core_Render_View_Abstract
      * @return Core_Render_View_Abstract
      * @todo fix and check
      */
-    protected function _joinTemplates()
-    {
-        foreach ($this->_templates->getData() as $template => $content) {
-
-            if ($template === self::MAIN_TEMPLATE_KEY_NAME) {
-                continue;
-            }
-
-            $mainTemplate = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
-            $mainTemplate = str_replace(
-                '{;mod;' . $template . ';}',
-                $content,
-                $mainTemplate
-            );
-            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
-        }
-
-        return $this;
-    }
+/*
+ * xml z definicja wszystkich view na stronie
+ * tam przypisanie do konkretnych blokow
+ * inaczej przypisuje do mod
+ * dodac metoda ktora ma addChild
+ * 
+ */
+//    protected function _joinTemplates()
+//    {
+//        foreach ($this->_templates->getData() as $template => $content) {
+//
+//            if ($template === self::MAIN_TEMPLATE_KEY_NAME) {
+//                continue;
+//            }
+//
+//            $mainTemplate = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+//            $mainTemplate = str_replace(
+//                '{;mod;' . $template . ';}',
+//                $content,
+//                $mainTemplate
+//            );
+//            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
+//        }
+//
+//        return $this;
+//    }
 
     /**
      * render content to markers
@@ -618,9 +769,24 @@ class Core_Render_View_Abstract
         return $this;
     }
 
-    static function getSkinTemplate($template, $module)
+    /**
+     * return cached configuration or save it to cache file
+     *
+     * @param null|mixed $data
+     * @param string $type
+     * @return bool|void
+     */
+    protected function _templateCache($data = NULL, $type = 'template')
     {
-        
+        /** @var Core_Blue_Model_Cache $cache */
+        $cache      = Loader::getObject('Core_Blue_Model_Cache');
+        $cacheKey   = $this->getCacheName($type);
+
+        if ($data) {
+            return $cache->setCache($cacheKey, $data);
+        } else {
+            return $cache->getCache($cacheKey);
+        }
     }
 
     public function initializeBlock(){}

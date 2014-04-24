@@ -83,6 +83,7 @@ class Loader
         define('CORE_LIB', $main . '/Lib/');
         define('CORE_CACHE', $main . '/Lib/cache/');
         define('CORE_TEMP', $main . '/Lib/tmp/');
+        define('CORE_SKIN', $main . '/Lib/skin/');
 
         return $this;
     }

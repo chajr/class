@@ -5,8 +5,11 @@
  * @package     Core
  * @subpackage  Render
  * @author      chajr <chajr@bluetree.pl>
+ * @todo cache usage
+ * @todo external template usage
+ * @todo row custom renderer
  */
-class Core_Render_View_Grid extends Core_Render_View_Abstract
+abstract class Core_Render_View_Grid_Abstract extends Core_Render_View_Abstract
 {
     /**
      * string used to join many content for one marker

@@ -464,7 +464,7 @@ abstract class Core_Render_View_Abstract
         }
 
         try {
-            $this->_joinTemplates();
+            //$this->_joinTemplates();
             $this->_renderMarkers();
             $this->_path();
             $this->_clean();

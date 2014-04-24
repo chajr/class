@@ -9,12 +9,13 @@
  */
 class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
 {
-    const NONE          = 0;
-    const CONFIGURATION = 1;
-    const DATABASE      = 2;
-    const TEMPLATES     = 4;
-    const MISC          = 8;
-    const ALL           = 15;
+    const NONE              = 0;
+    const CONFIGURATION     = 1;
+    const DATABASE          = 2;
+    const TEMPLATES         = 4;
+    const MISC              = 8;
+    const CONTENT_TEMPLATES = 16;
+    const ALL               = 31;
 
     /**
      * count removed files
@@ -54,7 +55,7 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
 
         $clear = 0;
 
-        if ($this->hasArgument('--all')) {
+        if ($this->hasArgument('--all') || $this->hasArgument('-a')) {
             $clear += self::ALL;
         }
 
@@ -66,8 +67,12 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
             $clear += self::DATABASE;
         }
 
-        if ($this->hasArgument('--templates')) {
+        if ($this->hasArgument('--templates') || $this->hasArgument('--all_templates')) {
             $clear += self::TEMPLATES;
+        }
+
+        if ($this->hasArgument('--content_templates') || $this->hasArgument('--all_templates')) {
+            $clear += self::CONTENT_TEMPLATES;
         }
 
         if ($clear & self::CONFIGURATION) {
@@ -80,6 +85,10 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
 
         if ($clear & self::TEMPLATES) {
             $this->_clearTemplatesCache();
+        }
+
+        if ($clear & self::CONTENT_TEMPLATES) {
+            $this->_clearContentTemplatesCache();
         }
 
         echo "\nTotal removed files: {$this->_removedFiles} / {$this->_totalFiles} \n\n";
@@ -104,11 +113,21 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
     }
 
     /**
-     * remove template cache
+     * remove joined templates cache
      */
     protected function _clearTemplatesCache()
     {
+        $structure = glob(CORE_CACHE . '*_templates.cache');
+        $this->_removeMatchedFiles($structure);
+    }
 
+    /**
+     * remove full rendered templates
+     */
+    protected function _clearContentTemplatesCache()
+    {
+        $structure = glob(CORE_CACHE . '*_templates_data.cache');
+        $this->_removeMatchedFiles($structure);
     }
 
     /**
@@ -153,7 +172,7 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
 
     --help or -h         This help
 
-    --all                remove all cache
+    --all or -a          remove all cache
 
     --config             remove only configuration cache file
 
@@ -162,6 +181,10 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
     --templates          remove all template cached files
 
     --no-colors          display information without colorized strings
+
+    --content_templates  remove templates with rendered content
+
+    --all_templates      remove all templates cache
 
 \n
 USAGE;

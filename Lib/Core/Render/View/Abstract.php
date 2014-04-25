@@ -353,6 +353,7 @@ abstract class Core_Render_View_Abstract
 
         foreach ($list[0] as $externalTemplate) {
 
+            $baseContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
             $newTemplate = str_replace(
                 [
                     $this->_contentMarkers['external_start'],

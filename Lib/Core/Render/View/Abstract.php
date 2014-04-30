@@ -192,17 +192,17 @@ abstract class Core_Render_View_Abstract
             case Core_Incoming_Model_File::exist($currentSkinMod):
                 return $currentSkinMod;
 
-            case Core_Incoming_Model_File::exist($currentSkinDefaultMod):
-                return $currentSkinDefaultMod;
-
-            case Core_Incoming_Model_File::exist($skinDefaultMod):
-                return $skinDefaultMod;
-
             case Core_Incoming_Model_File::exist($currentSkinCore):
                 return $currentSkinCore;
 
+            case Core_Incoming_Model_File::exist($currentSkinDefaultMod):
+                return $currentSkinDefaultMod;
+
             case Core_Incoming_Model_File::exist($currentSkinDefaultCore):
                 return $currentSkinDefaultCore;
+
+            case Core_Incoming_Model_File::exist($skinDefaultMod):
+                return $skinDefaultMod;
 
             case Core_Incoming_Model_File::exist($skinDefaultCore):
                 return $skinDefaultCore;

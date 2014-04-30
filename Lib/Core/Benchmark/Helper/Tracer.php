@@ -223,7 +223,7 @@ class Core_Benchmark_Helper_Tracer
         if (self::$_tracerOn) {
             self::display();
             self::$_display .= '<pre>' . var_export($_SERVER, TRUE) . '</pre>';
-            error_class::log('tracer', self::$_display);
+            Loader::log('tracer', self::$_display, '--------tracer log--------');
         }
     }
 

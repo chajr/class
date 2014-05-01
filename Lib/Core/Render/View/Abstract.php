@@ -212,10 +212,10 @@ abstract class Core_Render_View_Abstract
                     'warning',
                     [
                         $currentSkinMod,
-                        $currentSkinDefaultMod,
-                        $skinDefaultMod,
                         $currentSkinCore,
+                        $currentSkinDefaultMod,
                         $currentSkinDefaultCore,
+                        $skinDefaultMod,
                         $skinDefaultCore,
                     ],
                     'missing template'

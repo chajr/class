@@ -37,9 +37,7 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
     {
         $module = Loader::code2name($module);
         try {
-            $mainConfigPath = $this->_getConfigPaths($module);
-            $mainConfig     = $this->_readConfiguration($mainConfigPath, $module);
-
+            $mainConfig     = $this->_getConfiguration($module);
             return $mainConfig;
         } catch (Exception $e) {
             Loader::exceptions($e);
@@ -50,41 +48,42 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
 
     /**
      * return path for module configuration file
-     * 
+     *
      * @param string $module
      * @return string
-     */
-    protected function _getConfigPaths($module)
-    {
-        if ($module === 'Core') {
-            $mainConfigPath = CORE_LIB . 'config.ini';
-        } else {
-            $libPath = Loader::name2path($module, FALSE);
-            $mainConfigPath = CORE_LIB . $libPath . '/etc/config.ini';
-        }
-
-        return $mainConfigPath;
-    }
-
-    /**
-     * read and parse module configuration file
-     * 
-     * @param string $mainConfigPath
-     * @param string $module
-     * @return array|boolean
      * @throws Exception
      */
-    protected function _readConfiguration($mainConfigPath, $module)
+    protected function _getConfiguration($module)
     {
-        if (file_exists($mainConfigPath)) {
-            $mainConfig = parse_ini_file($mainConfigPath, TRUE);
+        if ($module === 'Core') {
+            $basePath = CORE_LIB . 'config.';
         } else {
-            throw new Exception (
-                'Missing ' . $module . ' configuration: ' . $mainConfigPath
-            );
+            $libPath = Loader::name2path($module, FALSE);
+            $basePath = CORE_LIB . $libPath . '/etc/config.';
         }
 
-        return $mainConfig;
+        $ini    = $basePath . 'ini';
+        $json   = $basePath . 'json';
+        $php    = $basePath . 'php';
+
+        switch (TRUE) {
+            case file_exists($ini):
+                return parse_ini_file($ini, TRUE);
+
+            case file_exists($json):
+                $data = file_get_contents($json);
+                return json_decode($data, TRUE);
+
+            case file_exists($php):
+                return file_get_contents($php, TRUE);
+
+            default:
+                throw new Exception (
+                    'Missing ' . $module
+                    . " configuration:\n    $ini\n    $json\n    $php"
+                );
+                break;
+        }
     }
 
     /**

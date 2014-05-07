@@ -7,7 +7,7 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Model_Resource_Abstract
+abstract class Core_Db_Model_Resource_Abstract
     extends Core_Blue_Model_Object
     implements Core_Db_Model_Resource_Interface
 {
@@ -724,9 +724,13 @@ class Core_Db_Model_Resource_Abstract
      */
     protected function _executeQuery()
     {
-        /** @var Core_Db_Helper_Mysql $structure */
+        /** @var Core_Db_Helper_Mysql $result */
         $result      = Loader::getClass('Core_Db_Helper_Mysql', $this->_query);
         $hasErrors   = $result->err;
+
+        if ($result->id) {
+            $this->setData($this->_columnId, $result->id);
+        }
 
         if ($hasErrors) {
             throw new Exception('error with resource query ' . $hasErrors);

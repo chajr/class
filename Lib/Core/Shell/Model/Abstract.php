@@ -163,7 +163,6 @@ abstract class Core_Shell_Model_Abstract
         $list = $_GET;
         unset($list['run']);
         $this->_arguments = $list;
-        $this->_infoAlign *= 2;
 
         return $this;
     }
@@ -445,15 +444,19 @@ abstract class Core_Shell_Model_Abstract
      */
     protected function formatOutput($message, $key)
     {
-        $key        = $key . ' ';
-        $length     =  strlen($key);
-        $spaces     = $this->_infoAlign - $length;
+        if ($this->_isBrowser) {
+            $length = strlen(strip_tags($key));
+        } else {
+            $length = strlen($key);
+        }
+
+        $spaces = $this->_infoAlign - $length;
 
         for ($i = 1;$i <= $spaces; $i++) {
             $key .= ' ';
         }
 
-        return $key . $message;
+        return $key . ' ' . $message;
     }
 
     /**

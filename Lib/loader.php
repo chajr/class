@@ -344,9 +344,9 @@ class Loader
      * 
      * @param string $type
      * @param string|array $message
-     * @param string $title
+     * @param string|bool $title
      */
-    static function log($type, $message, $title)
+    static function log($type, $message, $title = NULL)
     {
         Loader::tracer('create log information', debug_backtrace(), '6d6d6d');
 
@@ -374,8 +374,13 @@ class Loader
         $time       = strftime('%H:%M:%S - %d-%m-%Y');
         $logFile    = $type . '.log';
         $logPath    = LOG_PATH . $logFile;
-        $title      = strtoupper($title);
-        $format     = "$title - [$time]:\n$message----------------------\n\n";
+
+        if ($title) {
+            $title  = strtoupper($title);
+            $format = "$title - [$time]:\n$message----------------------\n\n";
+        } else {
+            $format = "$message\n";
+        }
 
         if (!is_dir(LOG_PATH)) {
             @mkdir(LOG_PATH);

@@ -509,6 +509,7 @@ abstract class Core_Db_Model_Resource_Abstract
                 $this->_query = $this->_transformStructureToUpdate();
                 $this->where($this->_columnId . " = '$id'");
             } else {
+                $this->where('');
                 $this->_query = $this->_transformStructureToInsert();
             }
         }

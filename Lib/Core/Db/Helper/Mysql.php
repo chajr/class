@@ -14,7 +14,8 @@
  */
 class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
 {
-    const DEFAULT_CONNECTION_NAME = 'default_connection';
+    const CONNECTION_MYSQLI = 'Core_Db_Helper_Connection_Mysql';
+    const CONNECTION_PDO    = 'Core_Db_Helper_Connection_Pdo';
 
     /**
      * default constructor options
@@ -24,8 +25,14 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     protected $_options = [
         'sql'           => '',
         'connection'    => NULL,
+        'type'          => self::CONNECTION_PDO,
         'charset'       => NULL
     ];
+
+    /**
+     * @var Core_Db_Helper_Connection_Mysql|Core_Db_Helper_Connection_Pdo
+     */
+    protected $_connectionObject;
 
     /**
      * set default connection and run given query
@@ -45,10 +52,13 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
             $sql            = $this->_options['sql'];
         }
 
+        $this->_connectionObject = Loader::getObject($this->_options['type']);
+        $lib = $this->_connectionObject;
+
         if ($this->_options['connection']) {
             $this->_connection = $this->_options['connection'];
         } else {
-            $this->_connection = self::DEFAULT_CONNECTION_NAME;
+            $this->_connection = Core_Db_Helper_Connection_Interface::DEFAULT_CONNECTION_NAME;
         }
 
         if ($this->_options['charset']) {
@@ -58,7 +68,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
         $this->_query($sql);
 
         if ($this->_options['charset']) {
-            $this->_setCharset(Core_Db_Helper_Connection_Mysql::$defaultCharset);
+            $this->_setCharset($lib::$defaultCharset);
         }
     }
 
@@ -125,15 +135,25 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     {
         if (empty($sql)) {
             $this->err = 'Empty query';
+            $this->logQuery($sql);
             return;
         }
 
-        /** @var Core_Db_Helper_Connection_Mysql $connection */
-        $connection = Core_Db_Helper_Connection_Mysql::$connections[$this->_connection];
+        $lib = $this->_connectionObject;
+
+        /** @var Core_Db_Helper_Connection_Pdo $connection */
+        $connection = $lib::$connections[$this->_connection];
         $bool       = $connection->query($sql);
+
+        if ($connection->errorInfo()) {
+            $this->err = $connection->errorInfo();
+            $this->logQuery($sql);
+            return;
+        }
 
         if (!$bool) {
             $this->err = $connection->error;
+            $this->logQuery($sql);
             return;
         }
 
@@ -146,6 +166,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
         }
 
         $this->_result = $bool;
+        $this->logQuery($sql);
     }
 
     /**
@@ -155,8 +176,9 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
      */
     private function _setCharset($charset)
     {
-        /** @var Core_Db_Helper_Connection_Mysql $connection */
-        $connection = Core_Db_Helper_Connection_Mysql::$connections[$this->_connection];
+        $lib = $this->_connectionObject;
+        /** @var Core_Db_Helper_Connection_Pdo $connection */
+        $connection = $lib::$connections[$this->_connection];
         $connection->query("SET NAMES '$charset'");
     }
 }

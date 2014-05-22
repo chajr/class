@@ -14,41 +14,50 @@ class Core_Db_Initialize extends Core_Blue_Model_Initialize_Abstract
     public function init()
     {
         $configuration      = Loader::getConfiguration()->getCoreDb();
+
         $mysql              = $configuration->getConnectMysql() === 'enabled';
-        $initialize         = !$configuration->getInitialize() === 'disabled';
+        $pdo                = $configuration->getConnectPdo()   === 'enabled';
+        $initialize         = !$configuration->getInitialize()  === 'disabled';
+
         $mysqlConnections   = Loader::getConfiguration()->getDatabaseMysql()->getData();
+        $pdoConnections     = Loader::getConfiguration()->getDatabasePdo()->getData();
 
         if ($initialize) {
             return;
         }
 
+        if ($pdo) {
+            $this->_connect($pdoConnections, 'pdo');
+        }
+
         if ($mysql) {
-            $this->_connectMysql($mysqlConnections);
+            $this->_connect($mysqlConnections, 'mysql');
         }
     }
 
     /**
-     * initialize mysql connections
-     * 
-     * @param array $mysqlConnections
+     * initialize correct connection type connections
+     *
+     * @param array $connections
+     * @param string $type
      */
-    protected function _connectMysql(array $mysqlConnections)
+    protected function _connect($connections, $type)
     {
-        Loader::callEvent('connect_mysql_before', [$this, &$mysqlConnections]);
+        Loader::callEvent("connect_{$type}_before", [$this, &$connections]);
 
-        foreach ($mysqlConnections as $connection => $config) {
+        foreach ($connections as $connection => $config) {
             try {
                 $config['connection_name'] = $connection;
 
-                /** @var Core_Db_Helper_Connection_Mysql $conn */
+                /** @var Core_Db_Helper_Connection_Mysql|Core_Db_Helper_Connection_Pdo $conn */
                 $conn = Loader::getObject(
-                    'Core_Db_Helper_Connection_Mysql',
+                    'Core_Db_Helper_Connection_' . ucfirst($type),
                     $config,
-                    'connection_mysql_' . $connection
+                    "connect_{$type}_" . $connection
                 );
 
                 if ($conn->err) {
-                    Loader::callEvent('connect_mysql_exception', $this);
+                    Loader::callEvent("connect_{$type}_exception", $this);
                     throw new Exception($conn->err);
                 }
             } catch (Exception $e) {
@@ -56,6 +65,6 @@ class Core_Db_Initialize extends Core_Blue_Model_Initialize_Abstract
             }
         }
 
-        Loader::callEvent('connect_mysql_after', $this);
+        Loader::callEvent("connect_{$type}_after", $this);
     }
 }

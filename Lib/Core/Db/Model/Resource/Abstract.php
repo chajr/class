@@ -409,7 +409,7 @@ abstract class Core_Db_Model_Resource_Abstract
         $this->_collectionCounter = 0;
 
         foreach ($result as $row) {
-            $object = Loader::getClass('Core_Blue_Model_Object', $row);
+            $object = Loader::getClass('Core_Blue_Model_Object', ['data' => $row]);
             $key    = $this->_integerToStringKey($this->_collectionCounter);
             $this->setData($key, $object);
             $this->_collectionCounter++;

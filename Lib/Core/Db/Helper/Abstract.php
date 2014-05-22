@@ -78,6 +78,32 @@ abstract class Core_Db_Helper_Abstract
     }
 
     /**
+     * write complete query to log file
+     * 
+     * @param string $query
+     */
+    public function logQuery($query)
+    {
+        if (Loader::getConfiguration()->getCoreDb()->getLogQueries() !== 'enabled') {
+            return;
+        }
+
+        $errorIsArray   = is_array($this->err);
+        $noError        = $errorIsArray && $this->err[0] === '00000';
+
+        if ($this->err && !$noError) {
+            if ($errorIsArray) {
+                $error = implode(', ', $this->err);
+            } else {
+                $error = $this->err;
+            }
+            $query .= "\n[ERROR] " . $error;
+        }
+
+        Loader::log('database_queries', $query, 'query');
+    }
+
+    /**
      * set default connection and run given query
      *
      * @param string $sql

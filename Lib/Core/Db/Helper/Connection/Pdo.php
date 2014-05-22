@@ -1,20 +1,13 @@
 <?php
 /**
- * establish connection with database and put reference to it to special array
+ * establish connection with database and put reference to it into special array
  *
- * @author chajr <chajr@bluetree.pl>
- * @category    BlueFramework
  * @package     Core
  * @subpackage  Db
- * @author      Michał Adamiak    <chajr@bluetree.pl>
- * @copyright   chajr/bluetree
- * @version     1.3.0
- *
- * Display <a href="http://sam.zoy.org/wtfpl/COPYING">Do What The Fuck You Want To Public License</a>
- * @license http://sam.zoy.org/wtfpl/COPYING Do What The Fuck You Want To Public License
+ * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Helper_Connection_Mysql
-    extends mysqli
+class Core_Db_Helper_Connection_Pdo
+    extends PDO
     implements Core_Db_Helper_Connection_Interface
 {
     /**
@@ -27,7 +20,7 @@ class Core_Db_Helper_Connection_Mysql
      * contains connection array
      * @var array
      */
-    static $connections = array();
+    static $connections = [];
 
     /**
      * default charset
@@ -49,7 +42,7 @@ class Core_Db_Helper_Connection_Mysql
     ];
 
     /**
-     * creates instance of mysqli object and connect to database
+     * creates instance of pdo object and connect to database
      * name default is used for default connection to database !!!!
      *
      * @param array $options (host, username, pass, db_name, port, connection_name, charset)
@@ -59,21 +52,34 @@ class Core_Db_Helper_Connection_Mysql
         $this->_options         = array_merge($this->_options, $options);
         self::$defaultCharset   = $this->_options['charset'];
 
-        parent::__construct(
-            $this->_options['host'],
-            $this->_options['username'],
-            $this->_options['pass'],
-            $this->_options['db_name'],
-            $this->_options['port']
-        );
-        $this->logConnection($options);
+        if (isset($options) && !empty($options)) {
 
-        if (mysqli_connect_error()) {
-            $this->err = mysqli_connect_error();
-            return;
+            $dsn = $options['type']
+                . ':dbname='
+                . $options['db_name']
+                . ';host='
+                . $options['host']
+                . ';port='
+                . $options['port'];
+
+            try {
+                parent::__construct($dsn, $options['username'], $options['pass']);
+                $this->logConnection($options);
+            } catch (Exception $e) {
+                $this->err = $e->getMessage();
+                $this->logConnection($options, $e->getMessage());
+                return;
+            }
+
+            $errorInfo = $this->errorInfo();
+            if ($errorInfo[0] || $errorInfo[1] || $errorInfo[2]) {
+                $this->err = implode(':', $errorInfo);
+                $this->logConnection($options, $this->err);
+                return;
+            }
+
+            $this->query("SET NAMES '{$this->_options['charset']}'");
         }
-
-        $this->query("SET NAMES '{$this->_options['charset']}'");
 
         $isSetConnection = !isset($this->_options['connection_name']);
         $isConnection    = !$this->_options['connection_name'];
@@ -82,12 +88,12 @@ class Core_Db_Helper_Connection_Mysql
             $this->_options['connection_name'] = self::DEFAULT_CONNECTION_NAME;
         }
 
-        self::$connections[$this->_options['connection_name']] = $this;
+        self::$connections[$options['connection_name']] = $this;
     }
 
     /**
      * save log information about connection
-     * 
+     *
      * @param array $options
      * @param mixed $error
      */
@@ -100,8 +106,8 @@ class Core_Db_Helper_Connection_Mysql
         $options = implode(', ', $options);
         $options .= "\n" . __CLASS__;
 
-        if (mysqli_connect_error()) {
-            $options .= "\n[ERROR] " . mysqli_connect_error();
+        if ($error) {
+            $options .= "\n[ERROR] " . $error;
         }
 
         Loader::log('database_connections', $options, 'connection');

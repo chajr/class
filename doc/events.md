@@ -24,6 +24,9 @@ create_main_layout_after
 connect_mysql_before
 connect_mysql_after
 connect_mysql_exception
+connect_pdo_before
+connect_pdo_after
+connect_pdo_exception
 initialize_resource_model_before
 initialize_resource_model_after
 load_data_to_resource_before

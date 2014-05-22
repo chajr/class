@@ -128,7 +128,7 @@ class Loader
             $initialize = Loader::getConfiguration()->getData($module)->getInitialize();
             $modulePath = self::name2path(Loader::code2name($module), FALSE);
             $path       = CORE_LIB . $modulePath . '/Initialize.php';
-            $loadClass  = file_exists($path) && $initialize !== '';
+            $loadClass  = file_exists($path) && $initialize === 'enabled';
 
             if ($loadClass) {
                 self::getObject(self::code2name($module) . '_Initialize');
@@ -263,11 +263,9 @@ class Loader
 
         if ($moduleExist && $fileExist) {
             include_once $fullPath;
+        } else if (!$moduleExist) {
+            throw new Exception ('Module is disabled: ' . $fullPath);
         } else {
-            if (!$moduleExist) {
-                throw new Exception ('Module is disabled: ' . $fullPath);
-            }
-
             throw new Exception ('Class file is missing: ' . $fullPath);
         }
     }

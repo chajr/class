@@ -20,7 +20,7 @@ class Core_Blue_Model_Register extends Core_Blue_Model_Object
         $object = FALSE;
 
         try {
-            $object = new $class($args);
+            $object = Loader::getClass($class, $args);
         } catch (Exception $e) {
             Loader::exceptions($e);
         }

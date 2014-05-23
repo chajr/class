@@ -9,6 +9,29 @@
  */
 abstract class Core_Shell_Model_Abstract
 {
+    const HEADER = <<<EOT
+ ____    ___                    __                          
+/\  _`\ /\_ \                  /\ \__                       
+\ \ \L\ \//\ \    __  __     __\ \ ,_\  _ __    __     __   
+ \ \  _ <'\ \ \  /\ \/\ \  /'__`\ \ \/ /\`'__\/'__`\ /'__`\ 
+  \ \ \L\ \\\_\ \_\ \ \_\ \/\  __/\ \ \_\ \ \//\  __//\  __/ 
+   \ \____//\____\\\ \____/\ \____\\\ \__\\\ \_\\\ \____\ \____\
+    \/___/ \/____/ \/___/  \/____/ \/__/ \/_/ \/____/\/____/
+ __           __        
+/\ \       __/\ \       
+\ \ \     /\_\ \ \____  
+ \ \ \  __\/\ \ \ '__`\ 
+  \ \ \L\ \\\ \ \ \ \L\ \
+   \ \____/ \ \_\ \_,__/
+    \/___/   \/_/\/___/ 
+     _          _ _                 _       _   
+ ___| |__   ___| | |  ___  ___ _ __(_)_ __ | |_ 
+/ __| '_ \ / _ \ | | / __|/ __| '__| | '_ \| __|
+\__ \ | | |  __/ | | \__ \ (__| |  | | |_) | |_ 
+|___/_| |_|\___|_|_| |___/\___|_|  |_| .__/ \__|
+                                     |_|        
+EOT;
+
     /**
      * input arguments
      *
@@ -57,9 +80,17 @@ abstract class Core_Shell_Model_Abstract
 
     /**
      * value for point that [OK] or [ERROR] string will show up
+     * 
      * @var int
      */
     protected $_infoAlign = 30;
+
+    /**
+     * disable graphics header from output
+     * 
+     * @var bool
+     */
+    protected $_disableHeader = FALSE;
 
     /**
      * parse input parameters and start shell script
@@ -70,6 +101,11 @@ abstract class Core_Shell_Model_Abstract
         $this->_beforeRun();
         $this->_checkAccess();
         $this->_browserPageStart();
+
+        if (!$this->_disableHeader) {
+            echo self::HEADER;
+        }
+
         $this->_parseInput();
         $this->_showHelp();
         $this->run();

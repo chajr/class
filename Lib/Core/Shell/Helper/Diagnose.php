@@ -48,20 +48,101 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
         }
 
         if ($this->_diagnosticFlag) {
-            $this->_getConnections();
+            new Loader('', [
+                'check_tmp'     => FALSE,
+                'init_modules'  => FALSE,
+                'set_paths'     => FALSE
+            ]);
+            $this->_initModules();
         }
 
         if ($this->_diagnosticFlag) {
-            $this->_showLogs();
+            $this->_getConnections();
         }
 
-        //info about initialize modules
-        //mozliwe definiowanie wlasnych klas diagnostycznych jako helpery modulow
-        //sprawdza wtedy czy wlaczony modul posiada klase helper_diagnose i odpala
-        
-        
+        $this->_lunchCustomDiagnostic();
+        $this->_showLogs();
         $this->_showCachedFiles();
         $this->_checkFlag();
+    }
+
+    /**
+     * lunch diagnostic classes defined for module
+     */
+    protected function _lunchCustomDiagnostic()
+    {
+        if (!$this->_configuration) {
+            return;
+        }
+
+        echo "\n";
+        echo $this->_colorizeString('[Custom diagnostic]', 'cyan_label');
+        echo "\n";
+
+        foreach ($this->_configuration->getModules()->getData() as $module => $status) {
+            if ($status !== 'enabled') {
+                continue;
+            }
+
+            $moduleName     = Loader::code2name($module);
+            $libraryName    = $moduleName . '_Test_Diagnose';
+            $libraryPath    = CORE_LIB . Loader::name2path($libraryName, FALSE);
+
+            if (file_exists($libraryPath)) {
+                Loader::getClass($libraryName);
+            }
+        }
+
+        echo "\n";
+        echo $this->_colorizeString('[End custom diagnostic]', 'cyan_label');
+        echo "\n";
+    }
+
+    /**
+     * try to initialize modules
+     */
+    protected function _initModules()
+    {
+        echo "\n";
+        echo $this->_colorizeString('[Initialize modules]', 'blue_label');
+        echo "\n";
+
+        if ($this->_configuration->getCore()->getInitialize() !== 'enabled') {
+            $this->_errorMessage('Initialize is disabled in configuration');
+            return;
+        }
+
+        foreach ($this->_configuration->getModules()->getData() as $module => $status) {
+            if ($status !== 'enabled') {
+                continue;
+            }
+
+            $initStatus = $this->_configuration->getData($module)->getInitialize();
+            $moduleName = Loader::code2name($module);
+            $modulePath = Loader::name2path($moduleName, FALSE);
+            $path       = CORE_LIB . $modulePath . '/Initialize.php';
+            $exists     = file_exists($path);
+            $initialize = $initStatus === 'enabled';
+
+            if (!$initialize) {
+                $this->_warningMessage("Module $moduleName initialization is disabled");
+                continue;
+            }
+
+            if (!$exists) {
+                $this->_warningMessage("Module $moduleName initialization file not exists");
+                continue;
+            }
+
+            if ($exists && $initialize) {
+                try {
+                    Loader::getObject($moduleName . '_Initialize');
+                    $this->_successMessage("Module $moduleName was initialized");
+                } catch (Exception $e) {
+                    $this->_errorMessage($moduleName . ': ' . $e->getMessage());
+                }
+            }
+        }
     }
 
     /**
@@ -125,7 +206,10 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
         echo "\n";
 
         $mysqlConnections = $this->_configuration->getDatabaseMysql()->getData();
-        $this->_connectMysql($mysqlConnections);
+        $pdoConnections   = $this->_configuration->getDatabasePdo()->getData();
+
+        $this->_connect($mysqlConnections, 'mysql');
+        $this->_connect($pdoConnections, 'pdo');
     }
 
     /**
@@ -177,7 +261,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
         $this->_configuration = new Core_Blue_Model_Configuration();
 
         if ($this->_configuration->getData()) {
-            $this->_okMessage('Configuration loaded');
+            $this->_successMessage('Configuration loaded');
         } else {
             $this->_errorMessage('Configuration was not loaded');
         }
@@ -236,7 +320,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
     protected function _checkPath($value, $name, $flag = TRUE)
     {
         if (file_exists($value)) {
-            $this->_okMessage($name . ' exists: ' . $value);
+            $this->_successMessage($name . ' exists: ' . $value);
         } else {
             $this->_errorMessage($name . ' not exists exists: ' . $value, $flag);
         }
@@ -252,10 +336,23 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
     protected function _checkIsWritable($value, $name, $flag = TRUE)
     {
         if (is_writable($value)) {
-            $this->_okMessage($name. ' is writable');
+            $this->_successMessage($name. ' is writable');
         } else {
             $this->_errorMessage($name . ' is not writable', $flag);
         }
+    }
+
+    /**
+     * show warning message
+     *
+     * @param string $message
+     */
+    protected function _warningMessage($message) {
+        echo $this->formatOutput(
+            $message,
+            $this->_colorizeString('[WARNING]', 'brown')
+        );
+        echo "\n";
     }
 
     /**
@@ -263,7 +360,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
      * 
      * @param string $message
      */
-    protected function _okMessage($message) {
+    protected function _successMessage($message) {
         echo $this->formatOutput(
             $message,
             $this->_colorizeString('[OK]', 'green')
@@ -290,28 +387,29 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
     }
 
     /**
-     * initialize mysql connections
+     * initialize database connection
      *
-     * @param array $mysqlConnections
+     * @param array $connections
+     * @param string $type
      */
-    protected function _connectMysql(array $mysqlConnections)
+    protected function _connect(array $connections, $type)
     {
-        foreach ($mysqlConnections as $connection => $config) {
+        foreach ($connections as $connection => $config) {
             try {
                 $config['connection_name'] = $connection;
 
-                /** @var Core_Db_Helper_Connection_Mysql $conn */
                 $conn = Loader::getObject(
-                    'Core_Db_Helper_Connection_Mysql',
+                    'Core_Db_Helper_Connection_' . ucfirst($type),
                     $config,
-                    'connection_mysql_' . $connection
+                    "connection_{$type}_" . $connection
                 );
 
                 if ($conn->err) {
                     $this->_errorMessage($conn->err);
                 } else {
-                    $this->_okMessage(
-                        'Connection with: '
+                    $this->_successMessage(
+                        $type
+                        . ' connection with: '
                         . $config['connection_name']
                         . ' - ' . $config['host']
                     );

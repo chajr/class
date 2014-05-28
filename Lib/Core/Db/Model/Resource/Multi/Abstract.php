@@ -61,5 +61,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
      * 
      * 
      * filtry ktore odpowiadaja (za to co bedzie pobrane, lub za relacje)
+     * 
+     * opracowac w oprciu o join
      */
 }

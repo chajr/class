@@ -330,7 +330,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * return whole collection
      * 
-     * @return mixed|null
+     * @return mixed|array
      */
     public function returnCollection()
     {
@@ -338,7 +338,7 @@ abstract class Core_Db_Model_Resource_Abstract
             return $this->getData();
         }
 
-        return NULL;
+        return [];
     }
 
     /**
@@ -551,7 +551,7 @@ abstract class Core_Db_Model_Resource_Abstract
                 $this->where($column . " = '$id'");
             }
 
-            $this->_prepareDeleteQuery();
+            $this->_query = $this->_prepareDeleteQuery();
         }
 
         try {
@@ -732,6 +732,8 @@ abstract class Core_Db_Model_Resource_Abstract
         if ($result->id) {
             $this->setData($this->_columnId, $result->id);
         }
+
+        $this->_where = '';
 
         if ($hasErrors) {
             throw new Exception('error with resource query ' . $hasErrors);

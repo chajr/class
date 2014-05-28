@@ -9,6 +9,22 @@
 class Core_Blue_Helper_Math
 {
     /**
+     * Calculates percent difference between two numbers
+     * 
+     * @param int|float $from
+     * @param int|float $to
+     * @return int|float
+     */
+    static function getPercentDifference($from, $to)
+    {
+        if ($to === 0) {
+            return FALSE;
+        }
+
+        return 100 - (($to / $from) *100);
+    }
+
+    /**
      * calculate with percent is one number of other
      *
      * @param float $part value that is percent of other value

@@ -383,7 +383,7 @@ abstract class Core_Db_Model_Resource_Abstract
         $result         = $resource->fullResult();
         $this->_rows    = $resource->rows;
 
-        if ($resource->rows === 0) {
+        if ($resource->rows === 0 || $resource->rows === NULL) {
             return $this;
         }
 

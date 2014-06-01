@@ -210,6 +210,14 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
 
         $this->_connect($mysqlConnections, 'mysql');
         $this->_connect($pdoConnections, 'pdo');
+
+        if ($this->_configuration->getCoreDb()->getConnectMysql() === 'enabled') {
+            $this->_databaseAccess('Mysql');
+        }
+
+        if ($this->_configuration->getCoreDb()->getConnectPdo() === 'enabled') {
+            $this->_databaseAccess('Pdo_Mysql');
+        }
     }
 
     /**
@@ -400,8 +408,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
 
                 $conn = Loader::getObject(
                     'Core_Db_Helper_Connection_' . ucfirst($type),
-                    $config,
-                    "connection_{$type}_" . $connection
+                    $config
                 );
 
                 if ($conn->err) {
@@ -418,5 +425,34 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
                 $this->_errorMessage($e->getMessage());
             }
         }
+    }
+
+    /**
+     * try to execute simple query to database and get number of tables
+     * 
+     * @param string $type
+     */
+    protected function _databaseAccess($type)
+    {
+        echo "\n";
+        echo $this->_colorizeString(
+            '[Database access]',
+            'blue_label'
+        );
+        echo "\n";
+
+        /** @var Core_Db_Helper_Mysql $query */
+        $query = Loader::getClass('Core_Db_Helper_' . $type, [
+            'sql' => 'SHOW TABLES'
+        ]);
+
+        if ($query->err) {
+            $this->_errorMessage($query->err);
+            return;
+        }
+
+        $this->_successMessage(
+            "Query returns: {$query->rows} tables from database ($type)"
+        );
     }
 }

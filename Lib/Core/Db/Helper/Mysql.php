@@ -25,7 +25,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     protected $_options = [
         'sql'           => '',
         'connection'    => NULL,
-        'type'          => self::CONNECTION_PDO,
+        'type'          => self::CONNECTION_MYSQLI,
         'charset'       => NULL
     ];
 
@@ -131,7 +131,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
      *
      * @param string $sql
      */
-    private function _query($sql)
+    protected function _query($sql)
     {
         if (empty($sql)) {
             $this->err = 'Empty query';
@@ -141,15 +141,9 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
 
         $lib = $this->_connectionObject;
 
-        /** @var Core_Db_Helper_Connection_Pdo $connection */
+        /** @var Core_Db_Helper_Connection_Mysql $connection */
         $connection = $lib::$connections[$this->_connection];
         $bool       = $connection->query($sql);
-
-        if ($connection->errorInfo()) {
-            $this->err = $connection->errorInfo();
-            $this->logQuery($sql);
-            return;
-        }
 
         if (!$bool) {
             $this->err = $connection->error;
@@ -177,7 +171,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     private function _setCharset($charset)
     {
         $lib = $this->_connectionObject;
-        /** @var Core_Db_Helper_Connection_Pdo $connection */
+        /** @var Core_Db_Helper_Connection_Mysql $connection */
         $connection = $lib::$connections[$this->_connection];
         $connection->query("SET NAMES '$charset'");
     }

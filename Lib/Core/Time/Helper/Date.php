@@ -30,7 +30,10 @@ class Core_Time_Helper_Date
      * list of conversion types, default from ISO-8859-2 to UTF-8
      * @var array
      */
-    public $conversionArray = array('from' => 'ISO-8859-2', 'to' => 'UTF-8');
+    public $conversionArray = [
+        'from'  => 'ISO-8859-2',
+        'to'    => 'UTF-8'
+    ];
 
     /**
      * create date object with given timestamp, or current timestamp
@@ -41,10 +44,11 @@ class Core_Time_Helper_Date
      */
     public function __construct($date = FALSE)
     {
-        if ($date && is_numeric($date)) {
+        if (!$date || empty($date)) {
+            $this->_unixTimestamp = time();
+        } elseif ($date && is_numeric($date)) {
             $this->_unixTimestamp = $date;
         } elseif (is_array($date)) {
-
             $dateArray   = array($date[4], $date[3], $date[5]);
             $valid       = Core_Time_Helper_Simple_Date::valid($dateArray);
 
@@ -61,9 +65,32 @@ class Core_Time_Helper_Date
                 $date[3],
                 $date[5]
             );
-        } else {
-            $this->_unixTimestamp = time();
         }
+    }
+
+    /**
+     * return set up current timestamp
+     * 
+     * @return int
+     */
+    public function getStamp()
+    {
+        return $this->_unixTimestamp;
+    }
+
+    /**
+     * allow to set new timestamp
+     * 
+     * @param integer $stamp
+     * @return Core_Time_Helper_Date
+     */
+    public function setStamp($stamp)
+    {
+        if (is_int($stamp)) {
+            $this->_unixTimestamp = $stamp;
+        }
+
+        return $this;
     }
 
     /**

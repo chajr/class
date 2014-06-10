@@ -239,47 +239,13 @@ class Loader
     }
 
     /**
-     * load class for enabled module
-     * 
-     * @param string $class
-     * @throws Exception
-     */
-    static function loadClass($class)
-    {
-        Loader::tracer('class loaded', debug_backtrace(), '008e85');
-
-        $classPath      = self::name2path($class);
-        $module         = self::name2module($class);
-        $fullPath       = CORE_LIB . $classPath;
-        $fileExist      = file_exists($fullPath);
-        $moduleExist    = TRUE;
-        $instance       = self::$_configuration instanceof Core_Blue_Model_Configuration;
-        $coreModule     = $module !== 'core_blue';
-
-        if ($coreModule && $instance) {
-            $modules        = self::$_configuration->getModules()->getData();
-            $moduleExist    = isset($modules[$module]) && $modules[$module] === 'enabled';
-        }
-
-        if ($moduleExist && $fileExist) {
-            include_once $fullPath;
-        } else if (!$moduleExist) {
-            throw new Exception ('Module is disabled: ' . $fullPath);
-        } else {
-            throw new Exception ('Class file is missing: ' . $fullPath);
-        }
-    }
-
-    /**
      * return object instance, or create it with sets of arguments
      * optionally when create at instance give an instance name to take by that name instead of class name
      * 
      * @param string $class
      * @param array $args
      * @param null|string $instanceName
-     * 
      * @return object;
-     * @todo configuration check that module for class is enabled
      */
     static function getObject($class, $args = [], $instanceName = NULL)
     {
@@ -316,12 +282,25 @@ class Loader
      * @param string $name
      * @param array $args
      * @return mixed
-     * @todo configuration check that module for class is enabled
      */
     static function getClass($name, $args = [])
     {
         Loader::tracer('create object', debug_backtrace(), '008e85');
+        if (self::$_register) {
+            self::$_register->setClassCounter($name);
+        }
+
         return new $name($args);
+    }
+
+    /**
+     * return list of created by Loader::getClass objects and number of executions
+     * 
+     * @return array
+     */
+    static function getClassCounter()
+    {
+        return self::$_register->getClassCounter();
     }
 
     /**
@@ -445,6 +424,39 @@ class Loader
                     self::exceptions($e);
                 }
             }
+        }
+    }
+
+    /**
+     * load class for enabled module
+     * used for class auto loading
+     *
+     * @param string $class
+     * @throws Exception
+     */
+    static function loadClass($class)
+    {
+        Loader::tracer('class loaded', debug_backtrace(), '008e85');
+
+        $classPath      = self::name2path($class);
+        $module         = self::name2module($class);
+        $fullPath       = CORE_LIB . $classPath;
+        $fileExist      = file_exists($fullPath);
+        $moduleExist    = TRUE;
+        $instance       = self::$_configuration instanceof Core_Blue_Model_Configuration;
+        $coreModule     = $module !== 'core_blue';
+
+        if ($coreModule && $instance) {
+            $modules        = self::$_configuration->getModules()->getData();
+            $moduleExist    = isset($modules[$module]) && $modules[$module] === 'enabled';
+        }
+
+        if ($moduleExist && $fileExist) {
+            include_once $fullPath;
+        } else if (!$moduleExist) {
+            throw new Exception ('Module is disabled: ' . $fullPath);
+        } else {
+            throw new Exception ('Class file is missing: ' . $fullPath);
         }
     }
 }

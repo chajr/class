@@ -78,9 +78,14 @@ class Core_Db_Helper_Pdo_Mysql extends Core_Db_Helper_Mysql
         /** @var Core_Db_Helper_Connection_Pdo $connection */
         $connection = $lib::$connections[$this->_connection];
         $bool       = $connection->query($sql);
-        $error      = $bool->errorInfo();
 
-        if ($error[0] !== '00000') {
+        if (!$bool) {
+            $this->err = $connection->errorInfo();
+            $this->logQuery($sql);
+            return;
+        }
+
+        if ($bool->errorInfo()[0] !== '00000') {
             $this->err = $bool->errorInfo();
             $this->logQuery($sql);
             return;

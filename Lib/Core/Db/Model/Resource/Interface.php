@@ -8,8 +8,15 @@
  */
 interface Core_Db_Model_Resource_Interface
 {
+    const TABLE_STRUCTURE_CACHE_PREFIX  = 'table_structure_';
+    const DATA_TYPE_COLLECTION          = 'collection';
+    const DATA_TYPE_OBJECT              = 'object';
+    const MODEL_TYPE_SINGLE             = 'single';
+    const MODEL_TYPE_MULTI              = 'multi';
+    const MAIN_TABLE                    = 'main_table';
+
     public function save();
-    public function load();
+    public function load($id, $column);
     public function orderBy($rule);
     public function page($page);
     public function pageSize($size);

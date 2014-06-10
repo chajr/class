@@ -11,10 +11,6 @@ abstract class Core_Db_Model_Resource_Abstract
     extends Core_Blue_Model_Object
     implements Core_Db_Model_Resource_Interface
 {
-    const TABLE_STRUCTURE_CACHE_PREFIX  = 'table_structure_';
-    const DATA_TYPE_COLLECTION          = 'collection';
-    const DATA_TYPE_OBJECT              = 'object';
-
     /**
      * resource table name
      * 
@@ -110,27 +106,41 @@ abstract class Core_Db_Model_Resource_Abstract
     protected $_where = '';
 
     /**
+     * type of model
+     * 
+     * @var string
+     */
+    protected $_modelType = self::MODEL_TYPE_SINGLE;
+
+    /**
      * create resource object
      * get table structure if not exist in cache
      */
     public function initializeObject()
     {
-        $message = 'initialize resource model:' . $this->_tableName;
+        $message = 'initialize '
+            . $this->_modelType
+            . ' resource model:'
+            . $this->_tableName;
+
         Loader::tracer($message, debug_backtrace(), '000000');
-        Loader::callEvent('initialize_resource_model_before', $this);
+        Loader::callEvent(
+            'initialize_' . $this->_modelType . '_resource_model_before',
+            $this
+        );
 
         try{
             if (empty($this->_tableStructure)) {
                 $this->_tableStructure = $this->_tableStructure();
-                if (!$this->_tableStructure) {
-                    $this->_tableStructure = $this->_returnTableStructure();
-                    $this->_tableStructure($this->_tableStructure);
-                }
             }
         } catch (Exception $e) {
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
-            Loader::exceptions($e, 'initialize resource', 'database');
+            Loader::exceptions(
+                $e,
+                'initialize ' . $this->_modelType . ' resource',
+                'database'
+            );
         }
     }
 
@@ -139,7 +149,9 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     public function afterInitializeObject()
     {
-        Loader::callEvent('initialize_resource_model_after', $this);
+        Loader::callEvent(
+            'initialize_' . $this->_modelType . '_resource_model_after', $this
+        );
     }
 
     /**
@@ -150,9 +162,39 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     protected function _tableStructure($structure = NULL)
     {
+        $structure = $this->_prepareStructure($this->_tableName, $structure);
+        return $this->_checkTableStructure($this->_tableName, $structure);
+    }
+
+    /**
+     * check if cache return table structure
+     * if not lunch method to read table structure
+     * 
+     * @param string $table
+     * @param array|null $structure
+     * @return array
+     */
+    protected function _checkTableStructure($table, $structure)
+    {
+        if (!$structure) {
+            return $this->_getTableStructure($table);
+        }
+
+        return $structure;
+    }
+
+    /**
+     * get or set table structure from cache for given table
+     * 
+     * @param string $tableName
+     * @param null|array $structure
+     * @return mixed
+     */
+    protected function _prepareStructure($tableName, $structure = NULL)
+    {
         /** @var Core_Blue_Model_Cache $cache */
         $cache = Loader::getClass('Core_Blue_Model_Cache');
-        $name  = self::TABLE_STRUCTURE_CACHE_PREFIX . $this->_tableName;
+        $name  = self::TABLE_STRUCTURE_CACHE_PREFIX . $tableName;
 
         if ($structure) {
             $readyData = serialize($structure);
@@ -163,19 +205,20 @@ abstract class Core_Db_Model_Resource_Abstract
     }
 
     /**
-     * read table structure from database
+     * read table structure from database for given table
      * 
+     * @param string $table
      * @return array
      * @throws Exception
      */
-    protected function _returnTableStructure()
+    protected function _getTableStructure($table)
     {
-        $this->_query       = 'DESCRIBE ' . $this->_tableName;
+        $this->_query       = 'DESCRIBE ' . $table;
         $result             = $this->_executeQuery($this->_query);
         $structure          = $result->fullResult();
 
         if (empty($structure)) {
-            throw new Exception('missing table structure');
+            throw new Exception('missing table structure: ' . $table);
         }
 
         return $structure;
@@ -258,11 +301,7 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     public function load($id = NULL, $column = NULL)
     {
-        $message = 'load resource:' . $this->_tableName . ', ' . $id;
-        Loader::tracer($message, debug_backtrace(), '000000');
-        Loader::callEvent('load_data_to_resource_before', [$this, &$id, &$column]);
-
-        $this->_query = 'SELECT * FROM ' . $this->_tableName;
+        $this->_loadBegin($id, $column);
 
         if ($id && !$column) {
             $this->where($this->_columnId . " = '$id'");
@@ -270,22 +309,79 @@ abstract class Core_Db_Model_Resource_Abstract
             $this->where($column . " = '$id'");
         }
 
-        $this->_applyWhere()->_applyOrder()->_applyPageSize();
+        $this->_applyWhere()->_applyOrder()->_applyPageSize()->_loadEnd($id);
 
+        return $this;
+    }
+
+    /**
+     * begin load data
+     * 
+     * @param int $id
+     * @param string|null $column
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _loadBegin(&$id, &$column)
+    {
+        $message = 'load resource:' . $this->_tableName . ', ' . $id;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent(
+            'load_data_to_' . $this->_modelType . '_resource_before',
+            [$this, &$id, &$column]
+        );
+
+        $this->_query = 'SELECT ' . $this->_applySelectFilter() . ' FROM ' . $this->_tableName;
+
+        return $this;
+    }
+
+    /**
+     * finish load and execute query
+     * 
+     * @param int $id
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _loadEnd($id)
+    {
         try {
             $this->unsetData();
             $resource = $this->_executeQuery();
             $this->_createCollection($resource);
             $this->replaceDataArrays();
-            Loader::callEvent('load_data_to_resource_after', [$this, $id, $resource]);
+            Loader::callEvent(
+                'load_data_to_' . $this->_modelType . '_resource_after',
+                [$this, $id, $resource]
+            );
         } catch (Exception $e) {
-            Loader::callEvent('load_data_to_resource_error', [$this, $id, $e]);
+            Loader::callEvent(
+                'load_data_to_' . $this->_modelType . '_resource_error',
+                [$this, $id, $e]
+            );
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
             Loader::exceptions($e, 'load resource', 'database');
         }
 
         return $this;
+    }
+
+    /**
+     * apply select data filter for load method
+     * 
+     * @return string
+     */
+    protected function _applySelectFilter()
+    {
+        $select = '';
+
+        if (!empty($this->_filters)) {
+            foreach ($this->_filters as $filter) {
+                $select .= $filter . ',';
+            }
+            return rtrim($select, ',');
+        }
+
+        return '*';
     }
 
     /**
@@ -391,7 +487,7 @@ abstract class Core_Db_Model_Resource_Abstract
             $this->setData($result[0]);
             $this->_dataType = self::DATA_TYPE_OBJECT;
         } else {
-            $this->_transformRowsToObject($result);
+            $this->_transformRowsToObject($result[0]);
             $this->_dataType = self::DATA_TYPE_COLLECTION;
         }
 
@@ -402,7 +498,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * convert array of dta from database to Core_Blue_Model_Object
      * 
      * @param array $result
-     * @return $this
+     * @return Core_Db_Model_Resource_Abstract
      */
     protected function _transformRowsToObject(array $result)
     {
@@ -567,19 +663,38 @@ abstract class Core_Db_Model_Resource_Abstract
         return $this;
     }
 
-    public function addFilter()
+    /**
+     * add select filter
+     *
+     * @param string $filter
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function addFilter($filter)
     {
-        
+        $this->_filters[$filter] = $filter;
+        return $this;
     }
 
+    /**
+     * list of existing filters
+     *
+     * @return array
+     */
     public function returnFilters()
     {
-        
+        return array_keys($this->_filters);
     }
 
-    public function removeFilter()
+    /**
+     * remove set up filter
+     *
+     * @param string $filter
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    public function removeFilter($filter)
     {
-        
+        unset($this->_filters[$filter]);
+        return $this;
     }
 
     /**
@@ -726,7 +841,7 @@ abstract class Core_Db_Model_Resource_Abstract
     protected function _executeQuery()
     {
         /** @var Core_Db_Helper_Mysql $result */
-        $result      = Loader::getClass('Core_Db_Helper_Mysql', $this->_query);
+        $result      = Loader::getClass('Core_Db_Helper_Pdo_Mysql', $this->_query);
         $hasErrors   = $result->err;
 
         if ($result->id) {
@@ -736,6 +851,10 @@ abstract class Core_Db_Model_Resource_Abstract
         $this->_where = '';
 
         if ($hasErrors) {
+            if (is_array($hasErrors)) {
+                $hasErrors = implode(', ', $hasErrors);
+            }
+
             throw new Exception('error with resource query ' . $hasErrors);
         }
 

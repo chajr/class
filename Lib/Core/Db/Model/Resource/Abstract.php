@@ -309,9 +309,10 @@ abstract class Core_Db_Model_Resource_Abstract
             $this->where($column . " = '$id'");
         }
 
-        $this->_applyWhere()->_applyOrder()->_applyPageSize()->_loadEnd($id);
-
-        return $this;
+        return $this->_applyWhere()
+            ->_applyOrder()
+            ->_applyPageSize()
+            ->_loadEnd($id);
     }
 
     /**
@@ -580,11 +581,12 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * prepare delete query
      * 
-     * @return string
+     * @return Core_Db_Model_Resource_Abstract|Core_Db_Model_Resource_Multi_Abstract
      */
     protected function _prepareDeleteQuery()
     {
-        return 'DELETE FROM ' . $this->_tableName . ' ';
+        $this->_query = 'DELETE FROM ' . $this->_tableName . ' ';
+        return $this;
     }
 
     /**
@@ -595,9 +597,7 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     public function save()
     {
-        $message = 'save resource:' . $this->_tableName;
-        Loader::tracer($message, debug_backtrace(), '000000');
-        Loader::callEvent('save_resource_data_before', $this);
+        $this->_saveBegin();
 
         if ($this->_dataType === self::DATA_TYPE_OBJECT) {
             $id = $this->getData($this->_columnId);
@@ -610,13 +610,46 @@ abstract class Core_Db_Model_Resource_Abstract
             }
         }
 
+        return $this->_applyWhere()->_saveEnd();
+    }
+
+    /**
+     * begin insert/update data
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _saveBegin()
+    {
+        $message = 'save resource:' . $this->_tableName;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent(
+            'save_' . $this->_modelType . '_resource_data_before',
+            $this
+        );
+
+        return $this;
+    }
+
+    /**
+     * finish insert/update and execute query
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _saveEnd()
+    {
         try {
-            $this->_applyWhere()->_executeQuery();
-            Loader::callEvent('save_resource_data_after', $this);
+            $this->_executeQuery();
+            Loader::callEvent(
+                'save_' . $this->_modelType . '_resource_data_after',
+                $this
+            );
         } catch (Exception $e) {
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
-            Loader::callEvent('save_resource_data_error', [$this, $e]);
+            Loader::callEvent(
+                'save_' . $this->_modelType . '_resource_data_error',
+                [$this, $e]
+            );
             Loader::exceptions($e, 'save error', 'database');
         }
 
@@ -632,31 +665,64 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     public function delete($id = NULL, $column = NULL)
     {
-        $message = 'delete resource:' . $this->_tableName;
-        Loader::tracer($message, debug_backtrace(), '000000');
-        Loader::callEvent('delete_resource_data_before', [$this, &$id, &$column]);
+        $this->_deleteBegin($id, $column);
 
         if ($this->_dataType === self::DATA_TYPE_OBJECT) {
             if (!$id) {
                 $id = $this->getData($this->_columnId);
             }
-
-            if ($id && !$column) {
-                $this->where($this->_columnId . " = '$id'");
-            } else if ($id && $column) {
-                $this->where($column . " = '$id'");
-            }
-
-            $this->_query = $this->_prepareDeleteQuery();
         }
 
+        if ($id && !$column) {
+            $this->where($this->_columnId . " = '$id'");
+        } else if ($id && $column) {
+            $this->where($column . " = '$id'");
+        }
+
+        return $this->_prepareDeleteQuery()
+            ->_applyWhere()
+            ->_deleteEnd();
+    }
+
+    /**
+     * begin deleting data
+     * 
+     * @param int|null $id
+     * @param string|null $column
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _deleteBegin(&$id, &$column)
+    {
+        $message = 'delete resource:' . $this->_tableName;
+        Loader::tracer($message, debug_backtrace(), '000000');
+        Loader::callEvent(
+            'delete_' . $this->_modelType . '_resource_data_before',
+            [$this, &$id, &$column]
+        );
+
+        return $this;
+    }
+
+    /**
+     * finish deleting and execute query
+     * 
+     * @return Core_Db_Model_Resource_Abstract
+     */
+    protected function _deleteEnd()
+    {
         try {
-            $this->_applyWhere()->_executeQuery();
-            Loader::callEvent('delete_resource_data_after', $this);
+            $this->_executeQuery();
+            Loader::callEvent(
+                'delete_' . $this->_modelType . '_resource_data_after',
+                $this
+            );
         } catch (Exception $e) {
             $this->_hasErrors       = TRUE;
             $this->_errorsList[]    = $e->getMessage();
-            Loader::callEvent('delete_resource_data_error', [$this, $e]);
+            Loader::callEvent(
+                'delete_' . $this->_modelType . '_resource_data_error',
+                [$this, $e]
+            );
             Loader::exceptions($e, 'delete error', 'database');
         }
 

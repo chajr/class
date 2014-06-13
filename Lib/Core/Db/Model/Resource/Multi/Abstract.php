@@ -71,12 +71,12 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
      *
      * @param null|string|integer $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return Core_Db_Model_Resource_Multi_Abstract
      */
     public function load($id = NULL, $column = NULL)
     {
         $this->_loadBegin($id, $column);
-        $this->_query .= ' AS ' . self::MAIN_TABLE;
+        $this->_applyMainTable();
 
         if ($id && !$column) {
             $this->where(self::MAIN_TABLE . '.' . $this->_columnId . " = '$id'");
@@ -84,15 +84,17 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
             $this->where($column . " = '$id'");
         }
 
-        $this->_applyJoin()->_applyWhere()->_applyOrder()->_applyPageSize()->_loadEnd($id);
-
-        return $this;
+        return $this->_applyJoin()
+            ->_applyWhere()
+            ->_applyOrder()
+            ->_applyPageSize()
+            ->_loadEnd($id);
     }
 
     /**
      * apply join instructions
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return Core_Db_Model_Resource_Multi_Abstract
      */
     protected function _applyJoin()
     {
@@ -128,17 +130,84 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
         return rtrim($select, ',');
     }
 
-    
-    
-    
-    
+    /**
+     * remove data from all joined tables
+     * 
+     * @param null|int $id
+     * @param null|string $column
+     * @return Core_Db_Model_Resource_Abstract
+     */
     public function delete($id = NULL, $column = NULL)
     {
-        
+        $this->_deleteBegin($id, $column);
+
+        if ($this->_dataType === self::DATA_TYPE_OBJECT) {
+            if (!$id) {
+                $id = $this->getData($this->_columnId);
+            }
+        }
+
+        if ($id && !$column) {
+            $this->where(self::MAIN_TABLE . '.' . $this->_columnId . " = '$id'");
+        } else if ($id && $column) {
+            $this->where($column . " = '$id'");
+        }
+
+        return $this->_prepareDeleteQuery()
+            ->_applyMainTable(TRUE)
+            ->_applyJoin()
+            ->_applyWhere()
+            ->_deleteEnd();
     }
 
+    /**
+     * prepare delete query
+     *
+     * @return Core_Db_Model_Resource_Abstract|Core_Db_Model_Resource_Multi_Abstract
+     */
+    protected function _prepareDeleteQuery()
+    {
+        $this->_query = 'DELETE FROM '
+            . self::MAIN_TABLE
+            . ' USING '
+            . $this->_tableName
+            . ' ';
+
+        return $this;
+    }
+
+    /**
+     * apply main table alias name
+     * 
+     * @return Core_Db_Model_Resource_Multi_Abstract
+     */
+    protected function _applyMainTable()
+    {
+        $this->_query .= ' AS ' . self::MAIN_TABLE;
+        return $this;
+    }
+
+    /**
+     * allow to save data from model
+     *
+     * @return Core_Db_Model_Resource_Abstract
+     * @todo collection handling
+     */
     public function save()
     {
-
+//        $this->_saveBegin();
+//
+//        if ($this->_dataType === self::DATA_TYPE_OBJECT) {
+//            $id = $this->getData($this->_columnId);
+//            if ($id) {
+//                $this->_query = $this->_transformStructureToUpdate();
+//                $this->where($this->_columnId . " = '$id'");
+//            } else {
+//                $this->where('');
+//                $this->_query = $this->_transformStructureToInsert();
+//            }
+//        }
+//
+//        return $this->_applyWhere()->_saveEnd();
     }
 }

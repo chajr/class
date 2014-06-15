@@ -78,12 +78,12 @@ class Loader
         }
 
         $main = dirname($filePath);
-        define('MAIN_PATH', $main);
-        define('LOG_PATH', $main . '/Lib/log/');
-        define('CORE_LIB', $main . '/Lib/');
-        define('CORE_CACHE', $main . '/Lib/cache/');
-        define('CORE_TEMP', $main . '/Lib/tmp/');
-        define('CORE_SKIN', $main . '/Lib/skin/');
+        define('MAIN_PATH',  $main);
+        define('LOG_PATH',   $main . '/var/log/');
+        define('CORE_LIB',   $main . '/Lib/');
+        define('CORE_CACHE', $main . '/var/cache/');
+        define('CORE_TEMP',  $main . '/var/tmp/');
+        define('CORE_SKIN',  $main . '/Lib/skin/');
 
         return $this;
     }

@@ -6,7 +6,10 @@
  * @subpackage  Blue
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
+namespace Core\Blue\Model;
+use Loader;
+use Exception;
+class Configuration extends Object
 {
     /**
      * read all configurations, merge them and set as DATA
@@ -110,12 +113,12 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
      * 
      * @param string $key
      * @param mixed $data
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     protected function _convertToObject($key, $data)
     {
         if (is_array($data)) {
-            return new Core_Blue_Model_Object($data);
+            return new Object($data);
         }
 
         return $data;
@@ -129,8 +132,8 @@ class Core_Blue_Model_Configuration extends Core_Blue_Model_Object
      */
     protected function _configCache($data = NULL)
     {
-        /** @var Core_Blue_Model_Cache $cache */
-        $cache = Loader::getObject('Core_Blue_Model_Cache');
+        /** @var Cache $cache */
+        $cache = Loader::getObject('Core\Blue\Model\Cache');
         if ($data) {
             $readyData = serialize($data);
             return $cache->setCache('main_configuration', $readyData);

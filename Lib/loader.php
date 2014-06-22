@@ -10,6 +10,7 @@ spl_autoload_register('Loader::loadClass');
  * @category    Loader
  * @author      chajr <chajr@bluetree.pl>
  */
+use Core\Blue\Model;
 class Loader
 {
     /**
@@ -20,12 +21,12 @@ class Loader
     public static $skipEvents = FALSE;
 
     /**
-     * @var Core_Blue_Model_Configuration
+     * @var Model\Configuration
      */
     protected static $_configuration;
 
     /**
-     * @var Core_Blue_Model_Register
+     * @var Model\Register
      */
     protected static $_register;
 
@@ -122,16 +123,20 @@ class Loader
             return $this;
         }
 
-        $modules = array_keys(self::$_configuration->getModules()->getData());
+        $modules = self::getConfiguration()->getModules()->getData();
 
-        foreach ($modules as $module) {
-            $initialize = Loader::getConfiguration()->getData($module)->getInitialize();
+        foreach ($modules as $module => $enabled) {
+            if ($enabled === 'disabled') {
+                continue;
+            }
+
+            $initialize = self::getConfiguration()->getData($module)->getInitialize();
             $modulePath = self::name2path(Loader::code2name($module), FALSE);
             $path       = CORE_LIB . $modulePath . '/Initialize.php';
             $loadClass  = file_exists($path) && $initialize === 'enabled';
 
             if ($loadClass) {
-                self::getObject(self::code2name($module) . '_Initialize');
+                self::getObject(self::code2name($module) . '\Initialize');
             }
         }
 
@@ -149,7 +154,7 @@ class Loader
             return $this;
         }
 
-        self::$_configuration = new Core_Blue_Model_Configuration();
+        self::$_configuration = new Model\Configuration();
 
         return $this;
     }
@@ -163,7 +168,7 @@ class Loader
             return $this;
         }
 
-        self::$_register = new Core_Blue_Model_Register();
+        self::$_register = new Model\Register();
 
         return $this;
     }
@@ -171,7 +176,7 @@ class Loader
     /**
      * return configuration object
      * 
-     * @return Core_Blue_Model_Configuration
+     * @return Model\Configuration
      */
     static function getConfiguration()
     {
@@ -187,7 +192,7 @@ class Loader
      */
     static function name2path ($name, $php = TRUE)
     {
-        $path = str_replace('_', '/', $name);
+        $path = str_replace('\\', '/', $name);
         if ($php) {
             $path .= '.php';
         }
@@ -202,7 +207,7 @@ class Loader
      */
     static function code2name($module)
     {
-        return implode('_', array_map('ucfirst', explode('_', $module)));
+        return implode('\\', array_map('ucfirst', explode('_', $module)));
     }
 
     /**
@@ -213,7 +218,7 @@ class Loader
      */
     static function name2code($module)
     {
-        return implode('_', array_map('strtolower', explode('_', $module)));
+        return implode('_', array_map('strtolower', explode('\\', $module)));
     }
 
     /**
@@ -225,7 +230,7 @@ class Loader
      */
     static function name2module($name, $toLower = TRUE)
     {
-        $part = explode('_', $name);
+        $part = explode('\\', $name);
 
         if (count($part) < 2) {
             return FALSE;
@@ -386,11 +391,11 @@ class Loader
             return;
         }
 
-        $classExists    = class_exists('Core_Benchmark_Helper_Tracer');
+        $classExists    = class_exists('Core\Benchmark\Helper\Tracer');
         $useTracer      = self::$_configuration->getCore()->getTracer();
 
         if ($classExists && $useTracer) {
-            Core_Benchmark_Helper_Tracer::marker([
+            Core\Benchmark\Helper\Tracer::marker([
                 $message,
                 $debugBacktrace,
                 '#' . $color
@@ -411,7 +416,7 @@ class Loader
             return;
         }
 
-        /** @var Core_Blue_Model_Object $events */
+        /** @var Model\Object $events */
         $events = Loader::getConfiguration()->getEvents();
 
         if ($events) {
@@ -443,7 +448,7 @@ class Loader
         $fullPath       = CORE_LIB . $classPath;
         $fileExist      = file_exists($fullPath);
         $moduleExist    = TRUE;
-        $instance       = self::$_configuration instanceof Core_Blue_Model_Configuration;
+        $instance       = self::$_configuration instanceof Model\Configuration;
         $coreModule     = $module !== 'core_blue';
 
         if ($coreModule && $instance) {

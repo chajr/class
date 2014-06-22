@@ -1,6 +1,5 @@
 <?php
 /**
- * Core_Blue_Model_Object_class
  * create basically object to store data or models and allows to easily access to object
  * Blue Object will use almost all objects in Blue Framework
  *
@@ -12,7 +11,10 @@
  * @version     1.2.0
  * @todo ini data handling (convert from ini and to ini data)
  */
-class Core_Blue_Model_Object
+namespace Core\Blue\Model;
+use DOMException;
+use DOMElement;
+class Object
 {
     /**
      * name of key prefix for xml node
@@ -174,7 +176,7 @@ class Core_Blue_Model_Object
      *
      * @param string $method
      * @param array $arguments
-     * @return Core_Blue_Model_Object|bool|mixed
+     * @return Object|bool|mixed
      */
     public function __call($method, $arguments)
     {
@@ -276,7 +278,7 @@ class Core_Blue_Model_Object
      * allow to set new prefix for integer key
      *
      * @param string $key
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function setIntegerKeyString($key)
     {
@@ -288,7 +290,7 @@ class Core_Blue_Model_Object
      * remove single error, or all object errors
      *
      * @param string $key
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function clearObjectError($key)
     {
@@ -351,7 +353,7 @@ class Core_Blue_Model_Object
      *
      * @param string|array $key
      * @param mixed $data
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function setData($key, $data = NULL)
     {
@@ -467,7 +469,7 @@ class Core_Blue_Model_Object
      * automatically set data to original array
      *
      * @param string|null $key
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function unsetData($key = NULL)
     {
@@ -494,7 +496,7 @@ class Core_Blue_Model_Object
      * set object key data to NULL
      *
      * @param string $key
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function clearData($key)
     {
@@ -507,7 +509,7 @@ class Core_Blue_Model_Object
      * set data changed to false only if restore whole data
      *
      * @param string $key
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function restoreData($key)
     {
@@ -528,7 +530,7 @@ class Core_Blue_Model_Object
      * this method set current DATA as original data
      * replace original data by DATA and set data changed to false
      *
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     public function replaceDataArrays()
     {
@@ -573,7 +575,7 @@ class Core_Blue_Model_Object
         $this->_prepareData();
 
         $config = ['version' => $version, 'encoding' => 'UTF-8'];
-        $xml    = new Core_Blue_Model_Xml($config);
+        $xml    = new Xml($config);
         $root   = $xml->createElement('root');
         $xml    = $this->_arrayToXml($this->_DATA, $xml, $addCdata, $root);
 
@@ -707,10 +709,10 @@ class Core_Blue_Model_Object
     /**
      * allow to join two blue objects into one
      *
-     * @param Core_Blue_Model_Object $object
-     * @return Core_Blue_Model_Object
+     * @param \Core\Blue\Model\Object|Object $object
+     * @return Object
      */
-    public function mergeBlueObject(Core_Blue_Model_Object $object)
+    public function mergeBlueObject(Object $object)
     {
         $newData = $object->getData();
 
@@ -740,7 +742,7 @@ class Core_Blue_Model_Object
      * apply given json data as object data
      *
      * @param string $data
-     * @return $this Core_Blue_Model_Object
+     * @return $this Object
      */
     protected function _appendJson($data)
     {
@@ -757,11 +759,11 @@ class Core_Blue_Model_Object
      * apply given xml data as object data
      *
      * @param $data string
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     protected function _appendXml($data)
     {
-        $xml                        = new Core_Blue_Model_Xml();
+        $xml                        = new Xml();
         $xml->preserveWhiteSpace    = FALSE;
         $bool                       = @$xml->loadXML($data);
 
@@ -846,7 +848,7 @@ class Core_Blue_Model_Object
      * set data given in constructor
      *
      * @param mixed $data
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     protected function _appendArray($data)
     {
@@ -864,7 +866,7 @@ class Core_Blue_Model_Object
      * if data is an object set one variable where key is an object class name
      *
      * @param mixed $data
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     protected function _appendSerialized($data)
     {
@@ -885,7 +887,7 @@ class Core_Blue_Model_Object
      *
      * @param string $key
      * @param mixed $data
-     * @return Core_Blue_Model_Object
+     * @return Object
      */
     protected function _putData($key, $data)
     {
@@ -928,12 +930,12 @@ class Core_Blue_Model_Object
      * recursive method to create structure xml structure of object DATA
      *
      * @param $data
-     * @param Core_Blue_Model_Xml $xml
+     * @param Xml $xml
      * @param boolean $addCdata
-     * @param Core_Blue_Model_Xml|DOMElement $parent
-     * @return Core_Blue_Model_Xml
+     * @param Xml|DOMElement $parent
+     * @return Xml
      */
-    protected function _arrayToXml($data, Core_Blue_Model_Xml $xml, $addCdata, $parent)
+    protected function _arrayToXml($data, Xml $xml, $addCdata, $parent)
     {
         foreach ($data as $key => $value) {
             $key        = str_replace(' ', '_', $key);
@@ -981,14 +983,14 @@ class Core_Blue_Model_Object
      *
      * @param array|string $value
      * @param string $addCdata
-     * @param Core_Blue_Model_Xml $xml
+     * @param Xml $xml
      * @param string|integer $key
      * @param DOMElement $parent
      * @param array $attributes
      * @return DOMElement
      */
     protected function _convertArrayDataToXml(
-        $value, $addCdata, Core_Blue_Model_Xml $xml, $key, $parent, array $attributes
+        $value, $addCdata, Xml $xml, $key, $parent, array $attributes
     ){
         if (count($value) === 1 && !empty($attributes) && isset($value[0])) {
             $children = $this->_appendDataToNode(
@@ -1012,12 +1014,12 @@ class Core_Blue_Model_Object
      * append data to node
      *
      * @param string $addCdata
-     * @param Core_Blue_Model_Xml $xml
+     * @param Xml $xml
      * @param string|integer $key
      * @param string $value
      * @return DOMElement
      */
-    protected function _appendDataToNode($addCdata, Core_Blue_Model_Xml $xml, $key, $value)
+    protected function _appendDataToNode($addCdata, Xml $xml, $key, $value)
     {
         if ($addCdata) {
             $cdata      = $xml->createCDATASection($value);

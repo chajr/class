@@ -8,7 +8,8 @@
  * @copyright   chajr/bluetree
  * @version     0.9.0
  */
-class Core_Blue_Helper_Validator
+namespace Core\Blue\Helper;
+class Validator
 {
     /**
      * array of regular expressions used to validate

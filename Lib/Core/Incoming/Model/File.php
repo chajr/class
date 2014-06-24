@@ -6,7 +6,11 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_File extends Core_Incoming_Model_Abstract
+namespace Core\Incoming\Model;
+use Exception;
+use Loader;
+use Core\Blue\Model;
+class File extends ModelAbstract
 {
     /**
      * array of uploaded files errors
@@ -52,7 +56,7 @@ class Core_Incoming_Model_File extends Core_Incoming_Model_Abstract
      * 
      * @param string $key
      * @param array $value
-     * @return Core_Incoming_Model_File
+     * @return File
      * @throws Exception
      */
     protected function _checkFile($key, array $value)
@@ -76,7 +80,7 @@ class Core_Incoming_Model_File extends Core_Incoming_Model_Abstract
 
         $path       = pathinfo($value['name']);
         $value      = array_merge($value, $path);
-        $newData    = new Core_Blue_Model_Object($value);
+        $newData    = new Model\Object($value);
         
         $this->setData($key, $newData);
 

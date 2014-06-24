@@ -6,7 +6,10 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_Session extends Core_Blue_Model_Object
+namespace Core\Incoming\Model;
+use Loader;
+use Core\Blue\Model;
+class Session extends Model\Object
 {
     /**
      * convert session to object

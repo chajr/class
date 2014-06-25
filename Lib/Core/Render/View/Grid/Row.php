@@ -6,4 +6,8 @@
  * @subpackage  Render
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Render_View_Grid_Row extends Core_Render_View_Abstract{}
+namespace Core\Render\View\Grid;
+class Row extends GridAbstract
+{
+    
+}

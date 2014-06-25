@@ -9,7 +9,11 @@
  * @todo external template usage
  * @todo row custom renderer
  */
-abstract class Core_Render_View_Grid_Abstract extends Core_Render_View_Abstract
+namespace Core\Render\View\Grid;
+use Core\Render\View;
+use Core\Blue\Model;
+use Loader;
+abstract class GridAbstract extends View\ViewAbstract
 {
     /**
      * string used to join many content for one marker
@@ -54,7 +58,7 @@ abstract class Core_Render_View_Grid_Abstract extends Core_Render_View_Abstract
         foreach ($data as $row) {
             $this->changeRowData($row);
 
-            /** @var Core_Render_View_Grid_Row $renderer */
+            /** @var Row $renderer */
             $renderer = Loader::getClass(
                 'Core_Render_View_Grid_Row', [
                     'template'      => $this->_options['template'],
@@ -76,12 +80,12 @@ abstract class Core_Render_View_Grid_Abstract extends Core_Render_View_Abstract
     /**
      * return data for row
      * 
-     * @param array|Core_Blue_Model_Object $row
+     * @param array|Model\Object $row
      * @return array
      */
     protected function _getDataFromFow($row)
     {
-        if ($row instanceof Core_Blue_Model_Object) {
+        if ($row instanceof Model\Object) {
             return $row->getData();
         }
 

@@ -56,7 +56,7 @@ class Initialize extends InitAbstract
 
                 /** @var Connection\Mysql|Connection\Pdo $conn */
                 $conn = Loader::getObject(
-                    'Core_Db_Helper_Connection_' . ucfirst($type),
+                    'Core\Db\Helper\Connection\\' . ucfirst($type),
                     $config,
                     "connect_{$type}_" . $connection
                 );

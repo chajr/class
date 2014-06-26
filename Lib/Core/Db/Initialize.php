@@ -6,7 +6,12 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Initialize extends Core_Blue_Model_Initialize_Abstract
+namespace Core\Db;
+use Core\Blue\Model\Initialize\InitAbstract;
+use Core\Db\Helper\Connection;
+use Exception;
+use Loader;
+class Initialize extends InitAbstract
 {
     /**
      * Initialize database connections
@@ -49,7 +54,7 @@ class Core_Db_Initialize extends Core_Blue_Model_Initialize_Abstract
             try {
                 $config['connection_name'] = $connection;
 
-                /** @var Core_Db_Helper_Connection_Mysql|Core_Db_Helper_Connection_Pdo $conn */
+                /** @var Connection\Mysql|Connection\Pdo $conn */
                 $conn = Loader::getObject(
                     'Core_Db_Helper_Connection_' . ucfirst($type),
                     $config,

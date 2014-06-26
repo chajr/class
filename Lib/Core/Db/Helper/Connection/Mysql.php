@@ -13,9 +13,10 @@
  * Display <a href="http://sam.zoy.org/wtfpl/COPYING">Do What The Fuck You Want To Public License</a>
  * @license http://sam.zoy.org/wtfpl/COPYING Do What The Fuck You Want To Public License
  */
-class Core_Db_Helper_Connection_Mysql
-    extends mysqli
-    implements Core_Db_Helper_Connection_Interface
+namespace Core\Db\Helper\Connection;
+use mysqli as Driver;
+use Loader;
+class Mysql extends Driver implements ConnectionInterface
 {
     /**
      * information about connection error

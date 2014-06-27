@@ -9,6 +9,7 @@
 */
 namespace Core\Benchmark\Helper;
 use Loader;
+use Exception;
 class Tracer
 {
     /**
@@ -115,7 +116,11 @@ class Tracer
             if (isset($data[1][0]['args']) && is_array($data[1][0]['args'])) {
                 foreach ($data[1][0]['args'] as $arg => $val) {
                     if (is_object($val)) {
-                        $data[1][0]['args'][$arg] = serialize($val);
+                        try {
+                            $data[1][0]['args'][$arg] = serialize($val);
+                        } catch (Exception $e) {
+                            $data[1][0]['args'][$arg] = $e->getMessage();
+                        }
                     }
                 }
             }

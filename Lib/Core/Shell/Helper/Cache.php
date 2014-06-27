@@ -7,7 +7,10 @@
  * @subpackage  Shell
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
+namespace Core\Shell\Helper;
+use Core\Shell\Model\ModelAbstract;
+use Core\Disc\Helper\Common;
+class Cache extends ModelAbstract
 {
     const NONE              = 0;
     const CONFIGURATION     = 1;
@@ -138,7 +141,7 @@ class Core_Shell_Helper_Cache extends Core_Shell_Model_Abstract
     protected function _removeMatchedFiles($cacheFiles)
     {
         foreach ($cacheFiles as $file) {
-            $bool       = Core_Disc_Helper_Common::delete($file);
+            $bool       = Common::delete($file);
             $fileName   = str_replace(CORE_CACHE, '', $file);
             $this->_totalFiles++;
 

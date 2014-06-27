@@ -7,7 +7,15 @@
  * @subpackage  Shell
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
+namespace Core\Shell\Helper;
+use Core\Shell\Model\ModelAbstract;
+use Core\Blue\Model;
+use Core\Disc\Helper\Common;
+use Core\Db\Helper\Mysql;
+use Loader;
+use Exception;
+use SplFileinfo;
+class Diagnose extends ModelAbstract
 {
     /**
      * @var bool
@@ -15,7 +23,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
     protected $_diagnosticFlag = TRUE;
 
     /**
-     * @var Core_Blue_Model_Object
+     * @var Model\Object
      */
     protected $_configuration;
     
@@ -177,8 +185,8 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
      */
     protected function _readDirectory($path, $type)
     {
-        if (class_exists('Core_Disc_Helper_Common')) {
-            $cache = Core_Disc_Helper_Common::readDirectory($path);
+        if (class_exists('Core\Disc\Helper\Common')) {
+            $cache = Common::readDirectory($path);
             /** @var SplFileInfo $file */
             foreach ($cache as $file) {
                 $modified = strftime('%d-%m-%Y %H:%M:%S', $file->getCTime());
@@ -187,7 +195,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
             }
         } else {
             $this->_errorMessage(
-                "Core_Disc module not exists, cannot read $type directory",
+                "Core\\Disc module not exists, cannot read $type directory",
                 FALSE
             );
         }
@@ -266,7 +274,7 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
         );
         echo "\n";
 
-        $this->_configuration = new Core_Blue_Model_Configuration();
+        $this->_configuration = new Model\Configuration();
 
         if ($this->_configuration->getData()) {
             $this->_successMessage('Configuration loaded');
@@ -441,8 +449,8 @@ class Core_Shell_helper_Diagnose extends Core_Shell_Model_Abstract
         );
         echo "\n";
 
-        /** @var Core_Db_Helper_Mysql $query */
-        $query = Loader::getClass('Core_Db_Helper_' . $type, [
+        /** @var Mysql $query */
+        $query = Loader::getClass('Core\Db\Helper\\' . $type, [
             'sql' => 'SHOW TABLES'
         ]);
 

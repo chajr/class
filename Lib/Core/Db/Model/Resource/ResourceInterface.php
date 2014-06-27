@@ -6,7 +6,8 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-interface Core_Db_Model_Resource_Interface
+namespace Core\Db\Model\Resource;
+interface ResourceInterface
 {
     const TABLE_STRUCTURE_CACHE_PREFIX  = 'table_structure_';
     const DATA_TYPE_COLLECTION          = 'collection';

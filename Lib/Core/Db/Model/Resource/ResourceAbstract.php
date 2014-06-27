@@ -7,9 +7,14 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-abstract class Core_Db_Model_Resource_Abstract
-    extends Core_Blue_Model_Object
-    implements Core_Db_Model_Resource_Interface
+namespace Core\Db\Model\Resource;
+use Core\Db\Model\Resource\Multi\MultiAbstract;
+use Core\Db\Helper\Connection;
+use Core\Db\Helper\Mysql;
+use Core\Blue\Model;
+use Loader;
+use Exception;
+abstract class ResourceAbstract extends Model\Object implements ResourceInterface
 {
     /**
      * resource table name
@@ -192,8 +197,8 @@ abstract class Core_Db_Model_Resource_Abstract
      */
     protected function _prepareStructure($tableName, $structure = NULL)
     {
-        /** @var Core_Blue_Model_Cache $cache */
-        $cache = Loader::getClass('Core_Blue_Model_Cache');
+        /** @var Model\Cache $cache */
+        $cache = Loader::getClass('Core\Blue\Model\Cache');
         $name  = self::TABLE_STRUCTURE_CACHE_PREFIX . $tableName;
 
         if ($structure) {
@@ -229,7 +234,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * (require to reinitialize object)
      * 
      * @param string $tableName
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function tableName($tableName)
     {
@@ -240,7 +245,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * reinitialize object
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function reinitialize()
     {
@@ -264,7 +269,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * allow to set new name of id column
      * 
      * @param string $columnId
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function columnId($columnId)
     {
@@ -297,7 +302,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param null|string|integer $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function load($id = NULL, $column = NULL)
     {
@@ -320,7 +325,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param int $id
      * @param string|null $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _loadBegin(&$id, &$column)
     {
@@ -340,7 +345,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * finish load and execute query
      * 
      * @param int $id
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _loadEnd($id)
     {
@@ -388,7 +393,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * add limit to main query
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _applyPageSize()
     {
@@ -405,7 +410,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * default return as array, but can return as blue object
      * 
      * @param bool $asObject
-     * @return Core_Blue_Model_Object|mixed|null
+     * @return Model\Object|mixed|null
      */
     public function returnFirstItem($asObject = FALSE)
     {
@@ -416,7 +421,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * return last element in collection
      * 
      * @param bool $asObject
-     * @return Core_Blue_Model_Object|mixed|null
+     * @return Model\Object|mixed|null
      */
     public function returnLastItem($asObject = FALSE)
     {
@@ -443,20 +448,20 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param integer $rowIndex
      * @param bool $asObject
-     * @return Core_Blue_Model_Object|Core_Db_Model_Resource_Abstract|mixed|null
+     * @return Model\Object|ResourceAbstract|mixed|null
      */
     public function returnRow($rowIndex, $asObject = FALSE)
     {
         if ($this->_dataType === self::DATA_TYPE_COLLECTION) {
             $key = $this->_integerToStringKey($rowIndex);
-            /** @var Core_Blue_Model_Object $object */
+            /** @var Model\Object $object */
             $object = $this->getData($key);
 
-            if ($object instanceof Core_Blue_Model_Object && $asObject) {
+            if ($object instanceof Model\Object && $asObject) {
                 return $object;
             }
 
-            if ($object instanceof Core_Blue_Model_Object) {
+            if ($object instanceof Model\Object) {
                 return $object->getData();
             }
 
@@ -472,10 +477,10 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * set returned data as object data or collection of objects
      * 
-     * @param Core_Db_Helper_Mysql $resource
-     * @return Core_Db_Model_Resource_Abstract
+     * @param Mysql $resource
+     * @return ResourceAbstract
      */
-    protected function _createCollection(Core_Db_Helper_Mysql $resource)
+    protected function _createCollection(Mysql $resource)
     {
         $result         = $resource->fullResult();
         $this->_rows    = $resource->rows;
@@ -496,17 +501,17 @@ abstract class Core_Db_Model_Resource_Abstract
     }
 
     /**
-     * convert array of dta from database to Core_Blue_Model_Object
+     * convert array of dta from database to Model\Object
      * 
      * @param array $result
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _transformRowsToObject(array $result)
     {
         $this->_collectionCounter = 0;
 
         foreach ($result as $row) {
-            $object = Loader::getClass('Core_Blue_Model_Object', ['data' => $row]);
+            $object = Loader::getClass('Model\Object', ['data' => $row]);
             $key    = $this->_integerToStringKey($this->_collectionCounter);
             $this->setData($key, $object);
             $this->_collectionCounter++;
@@ -581,7 +586,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * prepare delete query
      * 
-     * @return Core_Db_Model_Resource_Abstract|Core_Db_Model_Resource_Multi_Abstract
+     * @return ResourceAbstract|MultiAbstract
      */
     protected function _prepareDeleteQuery()
     {
@@ -592,7 +597,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * allow to save data from model
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      * @todo collection handling
      */
     public function save()
@@ -616,7 +621,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * begin insert/update data
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _saveBegin()
     {
@@ -633,7 +638,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * finish insert/update and execute query
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _saveEnd()
     {
@@ -661,7 +666,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param null|string|integer $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function delete($id = NULL, $column = NULL)
     {
@@ -689,7 +694,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param int|null $id
      * @param string|null $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _deleteBegin(&$id, &$column)
     {
@@ -706,7 +711,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * finish deleting and execute query
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _deleteEnd()
     {
@@ -733,7 +738,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * add select filter
      *
      * @param string $filter
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function addFilter($filter)
     {
@@ -755,7 +760,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * remove set up filter
      *
      * @param string $filter
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function removeFilter($filter)
     {
@@ -767,7 +772,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * add order to list
      * 
      * @param string $rule
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function orderBy($rule)
     {
@@ -779,7 +784,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * sets where clause
      * 
      * @param string $rule
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function where($rule)
     {
@@ -792,7 +797,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * (remember ot add AND | OR before)
      * 
      * @param string $rule
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function applyWhere($rule)
     {
@@ -823,7 +828,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * apply order to main query
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _applyOrder()
     {
@@ -842,7 +847,7 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * apply where to main query
      * 
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     protected function _applyWhere()
     {
@@ -858,7 +863,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param integer $start
      * @param integer $count
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function limit($start, $count)
     {
@@ -880,7 +885,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * allow to replace created by model query
      * 
      * @param string $query
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function replaceQuery($query)
     {
@@ -901,13 +906,13 @@ abstract class Core_Db_Model_Resource_Abstract
     /**
      * execute given query and checks that there was some errors
      * 
-     * @return Core_Db_Helper_Mysql
+     * @return Mysql
      * @throws Exception
      */
     protected function _executeQuery()
     {
-        /** @var Core_Db_Helper_Mysql $result */
-        $result      = Loader::getClass('Core_Db_Helper_Pdo_Mysql', $this->_query);
+        /** @var Mysql $result */
+        $result      = Loader::getClass('Core\Db\Helper\Pdo\Mysql', $this->_query);
         $hasErrors   = $result->err;
 
         if ($result->id) {
@@ -931,7 +936,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * allow to set page size
      * 
      * @param integer $size
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function pageSize($size)
     {
@@ -953,7 +958,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * set page number to retrieve
      * 
      * @param integer $page
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function page($page)
     {
@@ -976,7 +981,7 @@ abstract class Core_Db_Model_Resource_Abstract
      * 
      * @param mixed $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function loadAll($id, $column = NULL)
     {

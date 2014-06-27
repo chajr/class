@@ -6,7 +6,8 @@
  * @subpackage  Disc
  * @author      chajr <chajr@bluetree.pl>
  */
-interface Core_Disc_Model_Interface
+namespace Core\Disc\Model;
+interface ModelInterface
 {
     public function load();
     public function save();

@@ -113,7 +113,7 @@ class File extends ModelAbstract
      *
      * @param string|array $destination
      * @param string|boolean $name form name witch came file if NULL read form name from destinations array
-     * @return Core_Incoming_Model_File
+     * @return File
      * 
      * @example move(array('path1', 'path2'), 'form1') - put file to 2 directories
      * @example move(array('form1' => 'path', 'form2' => 'path2'))
@@ -160,7 +160,7 @@ class File extends ModelAbstract
      *
      * @param string $path
      * @param string $valueToPut
-     * @return Core_Incoming_Model_File
+     * @return File
      */
     protected function _createData($path, $valueToPut)
     {
@@ -189,7 +189,7 @@ class File extends ModelAbstract
      *
      * @param string $filename name of file in tmp directory
      * @param string $destination
-     * @return Core_Incoming_Model_File
+     * @return File
      * @throws Exception
      */
     private function _put($filename, $destination)

@@ -6,7 +6,11 @@
  * @subpackage  Disc
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Disc_Helper_Common
+namespace Core\Disc\Helper;
+use Core\Incoming\Model\File;
+use Loader;
+use DirectoryIterator;
+class Common
 {
     /**
      * restricted characters for file and directory names
@@ -27,7 +31,7 @@ class Core_Disc_Helper_Common
 
         $bool = [];
 
-        if(!Core_Incoming_Model_File::exist($path)){
+        if(!File::exist($path)){
             return NULL;
         }
 
@@ -79,13 +83,13 @@ class Core_Disc_Helper_Common
 
         $bool = [];
 
-        if (!Core_Incoming_Model_File::exist($path)) {
+        if (!File::exist($path)) {
             return NULL;
         }
 
         if (is_dir($path)) {
 
-            if (!Core_Incoming_Model_File::exist($target)) {
+            if (!File::exist($target)) {
                 $bool[] = mkdir($target);
             }
 
@@ -165,7 +169,7 @@ class Core_Disc_Helper_Common
         Loader::tracer('create file', debug_backtrace(), '6802cf');
         Loader::callEvent('create_file_before', [&$path, &$fileName, &$data]);
 
-        if (!Core_Incoming_Model_File::exist($path)) {
+        if (!File::exist($path)) {
             self::mkdir($path);
         }
 
@@ -199,12 +203,12 @@ class Core_Disc_Helper_Common
         Loader::tracer('rename file or directory', debug_backtrace(), '6802cf');
         Loader::callEvent('rename_file_or_directory_before', [&$source, &$target]);
 
-        if (!Core_Incoming_Model_File::exist($source)) {
+        if (!File::exist($source)) {
             Loader::callEvent('rename_file_or_directory_error', [$source, 'source']);
             return NULL;
         }
 
-        if (Core_Incoming_Model_File::exist($target)) {
+        if (File::exist($target)) {
             Loader::callEvent('rename_file_or_directory_error', [$target, 'target']);
             return FALSE;
         }
@@ -264,7 +268,7 @@ class Core_Disc_Helper_Common
             $path = MAIN_PATH;
         }
 
-        if (!Core_Incoming_Model_File::exist($path)) {
+        if (!File::exist($path)) {
             return NULL;
         }
 

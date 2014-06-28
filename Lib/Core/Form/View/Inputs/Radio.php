@@ -6,7 +6,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_View_Inputs_Radio extends Core_Form_View_Inputs_Abstract
+namespace Core\Form\View\Inputs;
+class Radio extends InputsAbstract
 {
 
 }

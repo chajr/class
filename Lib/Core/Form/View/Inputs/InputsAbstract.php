@@ -6,7 +6,9 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-abstract class Core_Form_View_Inputs_Abstract extends Core_Render_View_Abstract
+namespace Core\Form\View\Inputs;
+use Core\Render\View\ViewAbstract;
+abstract class InputsAbstract extends ViewAbstract
 {
     /**
      * array of non used in HTML5 attributes

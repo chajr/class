@@ -6,7 +6,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_Helper_Validator
+namespace Core\Form\Helper;
+class Validator
 {
     
 }

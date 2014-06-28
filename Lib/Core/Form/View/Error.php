@@ -6,7 +6,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_View_Error extends Core_Form_View_Abstract
+namespace Core\Form\View;
+class Error extends ViewAbstract
 {
 
 }

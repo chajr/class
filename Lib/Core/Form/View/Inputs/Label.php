@@ -6,7 +6,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_View_Inputs_Label extends Core_Render_View_Abstract
+namespace Core\Form\View\Inputs;
+class Label extends InputsAbstract
 {
 
 }

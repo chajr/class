@@ -6,7 +6,11 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_Model_Form
+namespace Core\Form\Model;
+use Core\Form\Model\Inputs\Input;
+use Core\Form\View\Container;
+use Loader;
+class Form
 {
     /**
      * contains array with object options
@@ -96,7 +100,7 @@ class Core_Form_Model_Form
      * apply new class to form
      * 
      * @param string $class
-     * @return Core_Form_Model_Form
+     * @return Form
      */
     public function addFormClass($class)
     {
@@ -108,7 +112,7 @@ class Core_Form_Model_Form
      * remove class from form element
      * 
      * @param string $class
-     * @return Core_Form_Model_Form
+     * @return Form
      */
     public function removeFormClass($class)
     {
@@ -129,12 +133,12 @@ class Core_Form_Model_Form
      * @param array $parameters
      * @param string $block
      * @param int $order
-     * @return Core_Form_Model_Form
+     * @return Form
      */
     public function addInput(array $parameters, $block = 'main', $order = NULL)
     {
-        /** @var Core_Form_Model_Inputs_Input $input */
-        $input = Loader::getClass('Core_Form_Model_Inputs_Input', $parameters);
+        /** @var Input $input */
+        $input = Loader::getClass('Core\Form\Model\Inputs\Input', $parameters);
 
         return $this;
     }
@@ -176,7 +180,7 @@ class Core_Form_Model_Form
      */
     public function renderForm()
     {
-        /** @var Core_Form_View_Container $container */
+        /** @var Container $container */
         $container = Loader::getClass(
             $this->_configuration['container_renderer'],
             [

@@ -6,7 +6,9 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_Model_Inputs_Label extends Core_Blue_Model_Object
+namespace Core\Form\Model\Inputs;
+use Core\Blue\Model\Object;
+class Label extends Object
 {
 
 }

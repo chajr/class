@@ -6,7 +6,9 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-abstract class Core_Form_Model_Inputs_Abstract extends Core_Blue_Model_Object
+namespace Core\Form\Model\Inputs;
+use Core\Blue\Model\Object;
+abstract class InputsAbstract extends Object
 {
     /**
      * array of non used in HTML5 attributes
@@ -85,7 +87,7 @@ abstract class Core_Form_Model_Inputs_Abstract extends Core_Blue_Model_Object
      * add some attributes to list of required attributes
      * 
      * @param string $attribute
-     * @return Core_Form_Model_Inputs_Abstract
+     * @return InputsAbstract
      */
     public function addRequiredAttribute($attribute)
     {
@@ -100,7 +102,7 @@ abstract class Core_Form_Model_Inputs_Abstract extends Core_Blue_Model_Object
      * start object by initialize Core_Blue_Model_Object
      * 
      * @param mixed $data
-     * @return Core_Form_Model_Inputs_Abstract
+     * @return InputsAbstract
      */
     public function initializeObject(&$data)
     {

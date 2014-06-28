@@ -7,7 +7,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_View_Container extends Core_Form_View_Abstract
+namespace Core\Form\View;
+class Container extends ViewAbstract
 {
 
 }

@@ -6,7 +6,8 @@
  * @subpackage  Form
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Form_Helper_Builder
+namespace Core\Form\Helper;
+class Builder
 {
     //build xml structure by methods
 }

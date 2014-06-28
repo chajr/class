@@ -6,7 +6,9 @@
  * @subpackage  Image
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Image_Helper_Image
+namespace Core\Image\Helper;
+use Exception;
+class Image
 {
     /**
      * quality of jpeg output file form 0 to 100 (default 100)
@@ -485,12 +487,12 @@ class Core_Image_Helper_Image
     /**
      * allow to put one image in another
      * 
-     * @param Core_Image_Helper_Image $handlerObject
+     * @param Image $handlerObject
      * @param integer $xPosition
      * @param integer $yPosition
      * @throws Exception merge_error
      */
-    public function placeImage(Core_Image_Helper_Image $handlerObject, $xPosition, $yPosition)
+    public function placeImage(Image $handlerObject, $xPosition, $yPosition)
     {
         $handler        = $handlerObject->returns('img');
         $imageWidth     = imagesx($handler);

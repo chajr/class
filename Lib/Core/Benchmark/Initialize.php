@@ -6,7 +6,10 @@
  * @subpackage  Benchmark
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Benchmark_Initialize extends Core_Blue_Model_Initialize_Abstract
+namespace Core\Benchmark;
+use Core\Blue\Model\Initialize\InitAbstract;
+use Loader;
+class Initialize extends InitAbstract
 {
     /**
      * initialize benchmark module
@@ -18,15 +21,15 @@ class Core_Benchmark_Initialize extends Core_Blue_Model_Initialize_Abstract
         $tracer         = $configuration->getTracer() === 'enabled';
 
         if ($benchmark) {
-            Core_Benchmark_Helper_Benchmark::turnOnBenchmark();
+            Helper\Benchmark::turnOnBenchmark();
         } else {
-            Core_Benchmark_Helper_Benchmark::turnOffBenchmark();
+            Helper\Benchmark::turnOffBenchmark();
         }
 
         if ($tracer) {
-            Core_Benchmark_Helper_Tracer::turnOnTracer();
+            Helper\Tracer::turnOnTracer();
         } else {
-            Core_Benchmark_Helper_Tracer::turnOffTracer();
+            Helper\Tracer::turnOffTracer();
         }
     }
 }

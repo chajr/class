@@ -8,7 +8,8 @@
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  */
-class Core_Benchmark_Helper_Benchmark
+namespace Core\Benchmark\Helper;
+class Benchmark
 {
     /**
      * information that marker time goes to group
@@ -60,7 +61,7 @@ class Core_Benchmark_Helper_Benchmark
 
     /**
      * contains color information for group of markers
-     * @var hex
+     * @var int
      */
     protected static $_backgroundColor = 0x3d3d3d;
 

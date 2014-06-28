@@ -6,7 +6,10 @@
  * @subpackage  Blue
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Blue_Model_Register extends Core_Blue_Model_Object
+namespace Core\Blue\Model;
+use Loader;
+use Exception;
+class Register extends Object
 {
     /**
      * store information about number of class executions
@@ -68,7 +71,7 @@ class Core_Blue_Model_Register extends Core_Blue_Model_Object
      * increment by 1 class execution
      * 
      * @param string $class
-     * @return Core_Blue_Model_Register $this
+     * @return Register
      */
     public function setClassCounter($class)
     {

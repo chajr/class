@@ -6,7 +6,12 @@
  * @subpackage  Render
  * @author      chajr <chajr@bluetree.pl>
  */
-abstract class Core_Render_View_Abstract
+namespace Core\Render\View;
+use Loader;
+use Exception;
+use Core\Incoming\Model as Incoming;
+use Core\Blue\Model as Blue;
+abstract class ViewAbstract
 {
     const MAIN_TEMPLATE_KEY_NAME    = 'main_template';
     const CORE_SKIN_DIRECTORY       = 'core/default';
@@ -51,7 +56,7 @@ abstract class Core_Render_View_Abstract
     /**
      * session object
      * 
-     * @var Core_Incoming_Model_Session
+     * @var Incoming\Session
      */
     protected $_session = NULL;
 
@@ -65,14 +70,14 @@ abstract class Core_Render_View_Abstract
     /**
      * list of templates
      * 
-     * @var Core_Blue_Model_Object
+     * @var Blue\Object
      */
     protected $_templates;
 
     /**
      * content markers
      * 
-     * @var Core_Blue_Model_Object
+     * @var Blue\Object
      */
     protected $_markers;
 
@@ -148,7 +153,7 @@ abstract class Core_Render_View_Abstract
     /**
      * set up cache name from class using view_abstract
      * 
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _setCacheName()
     {
@@ -189,22 +194,22 @@ abstract class Core_Render_View_Abstract
         $skinDefaultCore        = CORE_SKIN . $skinDefault;
 
         switch (TRUE) {
-            case Core_Incoming_Model_File::exist($currentSkinMod):
+            case Incoming\File::exist($currentSkinMod):
                 return $currentSkinMod;
 
-            case Core_Incoming_Model_File::exist($currentSkinCore):
+            case Incoming\File::exist($currentSkinCore):
                 return $currentSkinCore;
 
-            case Core_Incoming_Model_File::exist($currentSkinDefaultMod):
+            case Incoming\File::exist($currentSkinDefaultMod):
                 return $currentSkinDefaultMod;
 
-            case Core_Incoming_Model_File::exist($currentSkinDefaultCore):
+            case Incoming\File::exist($currentSkinDefaultCore):
                 return $currentSkinDefaultCore;
 
-            case Core_Incoming_Model_File::exist($skinDefaultMod):
+            case Incoming\File::exist($skinDefaultMod):
                 return $skinDefaultMod;
 
-            case Core_Incoming_Model_File::exist($skinDefaultCore):
+            case Incoming\File::exist($skinDefaultCore):
                 return $skinDefaultCore;
 
             default:
@@ -227,18 +232,18 @@ abstract class Core_Render_View_Abstract
     /**
      * apply markers set in session
      * 
-     * @param array|null|Core_Blue_Model_Object $data
+     * @param array|null|Blue\Object $data
      * @return array|null
      */
     protected function _getMarkersFromSession($data)
     {
-        if ($data instanceof Core_Blue_Model_Object) {
+        if ($data instanceof Blue\Object) {
             $data = $data->getData();
         }
 
-        /** @var Core_Incoming_Model_Session $session */
+        /** @var Incoming\Session $session */
         $sessionModel   = Loader::getObject('SESSION');
-        $instance       = $sessionModel instanceof Core_Incoming_Model_Session;
+        $instance       = $sessionModel instanceof Incoming\Session;
         $sessionData    = $sessionModel->getSessionMarkers();
         $isData         = is_array($data);
 
@@ -253,7 +258,7 @@ abstract class Core_Render_View_Abstract
      * set that markers will be cleared
      * 
      * @param boolean $val
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     public function setClearMarkers($val)
     {
@@ -276,7 +281,7 @@ abstract class Core_Render_View_Abstract
      * join all required templates
      * 
      * @param string $template
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _createMainLayout($template)
     {
@@ -336,7 +341,7 @@ abstract class Core_Render_View_Abstract
      * load external templates to main template,
      * or some external templates to module template
      *
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _external()
     {
@@ -385,7 +390,7 @@ abstract class Core_Render_View_Abstract
      *
      * @param string|array $marker marker name or array (marker => value)
      * @param string|boolean $content some string or NULL if marker array given
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      * 
      * @example generate('marker', 'content')
      * @example generate(array('marker' => 'content', 'marker2' => 'other content'), '')
@@ -408,7 +413,7 @@ abstract class Core_Render_View_Abstract
      * 
      * @param string $marker
      * @param string $content
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _setMarkerData($marker, $content)
     {
@@ -483,7 +488,7 @@ abstract class Core_Render_View_Abstract
     /**
      * join all templates added to main renderer
      * 
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      * @todo fix and check
      */
 /*
@@ -516,7 +521,7 @@ abstract class Core_Render_View_Abstract
     /**
      * render content to markers
      * 
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _renderMarkers()
     {
@@ -555,7 +560,7 @@ abstract class Core_Render_View_Abstract
      * change default string glue
      * 
      * @param string $glue
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     public function setContentGlue($glue)
     {
@@ -576,7 +581,7 @@ abstract class Core_Render_View_Abstract
     /**
      * run clean methods to remove unused markers
      * 
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _clean()
     {
@@ -600,7 +605,7 @@ abstract class Core_Render_View_Abstract
      * clean template from unused markers on loops and optional values
      *
      * @param string $type type to check
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _cleanMarkers($type)
     {
@@ -664,7 +669,7 @@ abstract class Core_Render_View_Abstract
     /**
      * replace paths marker with data
      *
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _path()
     {
@@ -686,14 +691,14 @@ abstract class Core_Render_View_Abstract
      * convert specific core path marker
      * 
      * @param string $type
-     * @return Core_Render_View_Abstract
+     * @return ViewAbstract
      */
     protected function _convertPathMarkers($type)
     {
-        /** @var Core_Incoming_Model_Get $getModel */
+        /** @var Incoming\Get $getModel */
         $getModel    = Loader::getObject('GET');
         $mainContent = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
-        $instance    = $getModel instanceof Core_Incoming_Model_Get; 
+        $instance    = $getModel instanceof Incoming\Get;
 
         if (!$instance) {
             return $this;
@@ -779,8 +784,8 @@ abstract class Core_Render_View_Abstract
      */
     protected function _templateCache($data = NULL, $type = 'template')
     {
-        /** @var Core_Blue_Model_Cache $cache */
-        $cache      = Loader::getObject('Core_Blue_Model_Cache');
+        /** @var Blue\Cache $cache */
+        $cache      = Loader::getObject('Core\Blue\Model\Cache');
         $cacheKey   = $this->getCacheName($type);
 
         if ($data) {

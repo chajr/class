@@ -8,8 +8,16 @@
  * @copyright   chajr/bluetree
  * @version     1.6.0
  */
-class Core_Blue_Model_Xml
-    extends DOMDocument
+namespace Core\Blue\Model;
+use DOMDocument;
+use DOMNodeList;
+use DOMNode;
+use DOMNamedNodeMap;
+use DOMDocumentType;
+use DOMImplementation;
+use DomElement;
+use Loader;
+class Xml extends DOMDocument
 {
     /**
      * Root element
@@ -87,19 +95,19 @@ class Core_Blue_Model_Xml
     public $previousSibling;
 
     /**
-     * przestrzen nazw biezacego wezla
+     * namespace fo current node
      * @var string
      */
     public $namespaceURI;
 
     /**
-     * obiekt dokumentu wezla referencyjnego
+     * reference node object
      * @var DOMDocument
      */
     public $ownerDocument;
 
     /**
-     * liczba elementow w kolekcji
+     * number of elements in collection
      * @var integer
      */
     public $length;
@@ -146,7 +154,7 @@ class Core_Blue_Model_Xml
     public function __construct(array $options = [])
     {
         Loader::tracer('start xml class', debug_backtrace(), '7E3A02');
-        
+
         $this->_options = array_merge($this->_options, $options);
 
         parent::__construct(
@@ -255,6 +263,7 @@ class Core_Blue_Model_Xml
         $value,
         array $list = array()
     ){
+        /** @var DomElement $child */
         foreach ($node as $child) {
             if($child->nodeType === 1){
 

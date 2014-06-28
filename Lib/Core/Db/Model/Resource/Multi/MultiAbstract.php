@@ -7,8 +7,9 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-abstract class Core_Db_Model_Resource_Multi_Abstract
-    extends Core_Db_Model_Resource_Abstract
+namespace Core\Db\Model\Resource\Multi;
+use Core\Db\Model\Resource\ResourceAbstract;
+abstract class MultiAbstract extends ResourceAbstract
 {
     /**
      * list of tables and types of join
@@ -71,7 +72,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
      *
      * @param null|string|integer $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Multi_Abstract
+     * @return MultiAbstract
      */
     public function load($id = NULL, $column = NULL)
     {
@@ -94,7 +95,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
     /**
      * apply join instructions
      * 
-     * @return Core_Db_Model_Resource_Multi_Abstract
+     * @return MultiAbstract
      */
     protected function _applyJoin()
     {
@@ -135,7 +136,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
      * 
      * @param null|int $id
      * @param null|string $column
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      */
     public function delete($id = NULL, $column = NULL)
     {
@@ -163,7 +164,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
     /**
      * prepare delete query
      *
-     * @return Core_Db_Model_Resource_Abstract|Core_Db_Model_Resource_Multi_Abstract
+     * @return ResourceAbstract|MultiAbstract
      */
     protected function _prepareDeleteQuery()
     {
@@ -179,7 +180,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
     /**
      * apply main table alias name
      * 
-     * @return Core_Db_Model_Resource_Multi_Abstract
+     * @return MultiAbstract
      */
     protected function _applyMainTable()
     {
@@ -190,7 +191,7 @@ abstract class Core_Db_Model_Resource_Multi_Abstract
     /**
      * allow to save data from model
      *
-     * @return Core_Db_Model_Resource_Abstract
+     * @return ResourceAbstract
      * @todo collection handling
      */
     public function save()

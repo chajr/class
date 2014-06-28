@@ -6,7 +6,8 @@
  * @subpackage  Date
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Time_Helper_Simple_Date
+namespace Core\Time\Helper\simple;
+class Date
 {
     /**
      * return formatted current time

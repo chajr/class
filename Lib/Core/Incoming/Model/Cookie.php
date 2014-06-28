@@ -6,7 +6,11 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_Cookie extends Core_Blue_Model_Object
+namespace Core\Incoming\Model;
+use Loader;
+use Core\Blue\Model;
+use Core\Blue\Helper;
+class Cookie extends Model\Object
 {
     /**
      * convert cookie to object
@@ -32,7 +36,7 @@ class Core_Incoming_Model_Cookie extends Core_Blue_Model_Object
      * @param string|array $key
      * @param mixed $data
      * @param integer|null $time
-     * @return Core_Incoming_Model_Cookie
+     * @return Cookie
      */
     public function setData($key, $data = NULL, $time = NULL)
     {
@@ -55,7 +59,7 @@ class Core_Incoming_Model_Cookie extends Core_Blue_Model_Object
      * @param string $key
      * @param mixed $val
      * @param integer|null $time
-     * @return Core_Incoming_Model_Cookie 
+     * @return Cookie
      */
     public function createCookie($key, $val, $time = NULL)
     {

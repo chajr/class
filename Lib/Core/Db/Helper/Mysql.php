@@ -2,20 +2,19 @@
 /**
  * handling of MySQL database
  *
- * @category    BlueFramework
  * @package     Core
  * @subpackage  Db
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @version     3.4.0
- *
- * Display <a href="http://sam.zoy.org/wtfpl/COPYING">Do What The Fuck You Want To Public License</a>
- * @license http://sam.zoy.org/wtfpl/COPYING Do What The Fuck You Want To Public License
  */
-class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
+namespace Core\Db\Helper;
+use Core\Db\Helper\Connection;
+use Loader;
+use mysqli_result;
+class Mysql extends HelperAbstract
 {
-    const CONNECTION_MYSQLI = 'Core_Db_Helper_Connection_Mysql';
-    const CONNECTION_PDO    = 'Core_Db_Helper_Connection_Pdo';
+    const CONNECTION_MYSQLI = 'Core\Db\Helper\Connection\Mysql';
+    const CONNECTION_PDO    = 'Core\Db\Helper\Connection\Pdo';
 
     /**
      * default constructor options
@@ -30,7 +29,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     ];
 
     /**
-     * @var Core_Db_Helper_Connection_Mysql|Core_Db_Helper_Connection_Pdo
+     * @var Connection\Mysql|Connection\Pdo
      */
     protected $_connectionObject;
 
@@ -58,7 +57,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
         if ($this->_options['connection']) {
             $this->_connection = $this->_options['connection'];
         } else {
-            $this->_connection = Core_Db_Helper_Connection_Interface::DEFAULT_CONNECTION_NAME;
+            $this->_connection = Connection\ConnectionInterface::DEFAULT_CONNECTION_NAME;
         }
 
         if ($this->_options['charset']) {
@@ -141,7 +140,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
 
         $lib = $this->_connectionObject;
 
-        /** @var Core_Db_Helper_Connection_Mysql $connection */
+        /** @var Connection\Mysql $connection */
         $connection = $lib::$connections[$this->_connection];
         $bool       = $connection->query($sql);
 
@@ -171,7 +170,7 @@ class Core_Db_Helper_Mysql extends Core_Db_Helper_Abstract
     private function _setCharset($charset)
     {
         $lib = $this->_connectionObject;
-        /** @var Core_Db_Helper_Connection_Mysql $connection */
+        /** @var Connection\Mysql $connection */
         $connection = $lib::$connections[$this->_connection];
         $connection->query("SET NAMES '$charset'");
     }

@@ -7,7 +7,10 @@
  * @subpackage  Blue
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Blue_Model_Cache extends Core_Blue_Model_Object
+namespace Core\Blue\Model;
+use Loader;
+use Exception;
+class Cache extends Object
 {
     /**
      * one day base value in seconds

@@ -7,7 +7,12 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
+namespace Core\Incoming\Model;
+use Exception;
+use Loader;
+use Core\Blue\Model;
+use Core\Blue\Helper;
+class ModelAbstract extends Model\Object
 {
     /**
      * depends of type, convert global array to blue object with validation
@@ -151,7 +156,7 @@ class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
      */
     protected function _validateByKeyName($key, $value)
     {
-        /** @var Core_Blue_Model_Object $config */
+        /** @var Model\Object $config */
         $config     = Loader::getConfiguration()->getSecure();
         $matches    = [];
 
@@ -160,14 +165,14 @@ class Core_Incoming_Model_Abstract extends Core_Blue_Model_Object
 
             foreach ($matches[0] as $validator) {
                 $validatorKey   = str_replace('--', '', $validator);
-                $valid          = Core_Blue_Helper_Validator::valid($value, $validatorKey);
+                $valid          = Helper\Validator::valid($value, $validatorKey);
 
                 if (!$valid) {
                     $this->_hasErrors           = TRUE;
                     $this->_errorsList[$key]    = [
                         'validator' => $validatorKey,
                         'value'     => $value,
-                        'pattern'   => Core_Blue_Helper_Validator::$regularExpressions[$validatorKey]
+                        'pattern'   => Helper\Validator::$regularExpressions[$validatorKey]
                     ];
                 }
             }

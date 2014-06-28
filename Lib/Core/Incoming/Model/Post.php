@@ -6,7 +6,9 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_Post extends Core_Incoming_Model_Abstract
+namespace Core\Incoming\Model;
+use Loader;
+class Post extends ModelAbstract
 {
     const NOT_SECURE        = 0;
     const ENTITIES_SECURE   = 2;

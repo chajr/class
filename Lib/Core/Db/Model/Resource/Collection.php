@@ -1,5 +1,14 @@
 <?php
-abstract class Core_Db_Model_Collection extends Core_Blue_Model_Object
+/**
+ * base class to handle collection
+ *
+ * @package     Core
+ * @subpackage  Db
+ * @author      chajr <chajr@bluetree.pl>
+ */
+namespace Core\Db\Model\Resource;
+use Core\Blue\Model\Object;
+abstract class Collection extends Object
 {
     
 }

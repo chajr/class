@@ -6,9 +6,11 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Db_Helper_Connection_Pdo
-    extends PDO
-    implements Core_Db_Helper_Connection_Interface
+namespace Core\Db\Helper\Connection;
+use PDO as Driver;
+use Loader;
+use Exception;
+class Pdo extends Driver implements ConnectionInterface
 {
     /**
      * information about connection error

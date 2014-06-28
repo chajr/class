@@ -6,7 +6,9 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Model_Get extends Core_Incoming_Model_Abstract
+namespace Core\Incoming\Model;
+use Loader;
+class Get extends ModelAbstract
 {
     /**
      * @var array

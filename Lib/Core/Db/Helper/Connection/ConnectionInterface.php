@@ -6,7 +6,8 @@
  * @subpackage  Db
  * @author      chajr <chajr@bluetree.pl>
  */
-interface Core_Db_Helper_Connection_Interface
+namespace Core\Db\Helper\Connection;
+interface ConnectionInterface
 {
     const DEFAULT_CHARSET           = 'UTF8';
     const DEFAULT_CONNECTION_NAME   = 'default_connection';

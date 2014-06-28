@@ -6,7 +6,9 @@
  * @subpackage  Blue
  * @author      chajr <chajr@bluetree.pl>
  */
-abstract class Core_Blue_Model_Initialize_Abstract
+namespace Core\Blue\Model\Initialize;
+use Loader;
+abstract class InitAbstract
 {
     public function __construct($params)
     {

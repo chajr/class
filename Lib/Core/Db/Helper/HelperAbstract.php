@@ -2,17 +2,15 @@
 /**
  * main abstract class to handle connection to database
  *
- * @category    BlueFramework
  * @package     Core
  * @subpackage  Db
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
- * @version     1.0.1
- *
- * Display <a href="http://sam.zoy.org/wtfpl/COPYING">Do What The Fuck You Want To Public License</a>
- * @license http://sam.zoy.org/wtfpl/COPYING Do What The Fuck You Want To Public License
  */
-abstract class Core_Db_Helper_Abstract
+namespace Core\Db\Helper;
+use Loader;
+use mysqli_result;
+abstract class HelperAbstract
 {
     /**
      * information about error

@@ -6,7 +6,14 @@
  * @subpackage  Disc
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_Disc_Model_Interface
+namespace Core\Disc\Model;
+use Core\Blue\Model\Object;
+use Core\Disc\Helper\Common;
+use Core\Incoming\Model;
+use Loader;
+use Exception;
+use DirectoryIterator;
+class Directory extends Object implements ModelInterface
 {
     /**
      * base configuration for directory
@@ -46,7 +53,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
     /**
      * load directory structure into object
      * 
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      * @throws Exception
      */
     public function load()
@@ -54,7 +61,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
         Loader::tracer('load directory into object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('load_directory_object_instance_before', $this);
 
-        if (!Core_Incoming_Model_File::exist($this->getMainPath())) {
+        if (!Model\File::exist($this->getMainPath())) {
             Loader::callEvent('load_directory_object_instance_error', $this);
             throw new Exception ('directory not exists: ' . $this->getMainPath());
         }
@@ -91,7 +98,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * @param DirectoryIterator $element
      * @param int $totalSize
      * @param int $files
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      */
     protected function _createFileInstance(DirectoryIterator $element, &$totalSize, &$files)
     {
@@ -100,8 +107,8 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
         );
         $fileList = $this->getChildFiles();
 
-        /** @var Core_Disc_Model_File $newFile */
-        $newFile = Loader::getClass('Core_Disc_Model_File', [
+        /** @var File $newFile */
+        $newFile = Loader::getClass('Core\Disc\Model\File', [
             'main_path'             => $this->getMainPath(),
             'size'                  => $element->getSize(),
             'permissions'           => $element->getPerms(),
@@ -128,14 +135,18 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * @param int $directories
      * @param int $files
      * @param int $totalSize
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      */
-    protected function _createDirectoryInstance(DirectoryIterator $element, &$directories, &$files, &$totalSize)
-    {
+    protected function _createDirectoryInstance(
+        DirectoryIterator $element,
+        &$directories,
+        &$files,
+        &$totalSize
+    ) {
         $directoryList = $this->getChildDirectories();
 
-        /** @var Core_Disc_Model_Directory $newDirectory */
-        $newDirectory = Loader::getClass('Core_Disc_Model_Directory', [
+        /** @var Directory $newDirectory */
+        $newDirectory = Loader::getClass('Core\Disc\Model\Directory', [
             'main_path'             => $element->getRealPath(),
         ]);
 
@@ -153,7 +164,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
     /**
      * remove directory, or object data if directory not exists
      * 
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      * @throws Exception
      */
     public function delete()
@@ -161,8 +172,8 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
         Loader::tracer('delete directory object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('delete_directory_object_instance_before', $this);
 
-        if (Core_Incoming_Model_File::exist($this->getMainPath())) {
-            $bool = Core_Disc_Helper_Common::delete($this->getMainPath());
+        if (Model\File::exist($this->getMainPath())) {
+            $bool = Common::delete($this->getMainPath());
 
             if (!$bool) {
                 Loader::callEvent('delete_directory_object_instance_error', $this);
@@ -178,7 +189,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
     /**
      * save all files and directories from object
      * 
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      * @throws Exception
      */
     public function save()
@@ -225,13 +236,13 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
     /**
      * create main directory if not exists
      * 
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      * @throws Exception
      */
     protected function _saveMe()
     {
-        if (!Core_Incoming_Model_File::exist($this->getMainPath())) {
-            $bool = Core_Disc_Helper_Common::mkdir($this->getMainPath());
+        if (!Model\File::exist($this->getMainPath())) {
+            $bool = Common::mkdir($this->getMainPath());
 
             if (!$bool) {
                 throw new Exception('unable to save main directory: ' . $this->getMainPath());
@@ -247,11 +258,11 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * @param int $directories
      * @param int $files
      * @param int $totalSize
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      */
     protected function _saveDirectories(&$directories, &$files, &$totalSize)
     {
-        /** @var Core_Disc_Model_Directory $child */
+        /** @var Directory $child */
         foreach ($this->getChildDirectories() as $child) {
             try {
                 
@@ -282,11 +293,11 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * 
      * @param int $files
      * @param int $totalSize
-     * @return Core_Disc_Model_Directory
+     * @return Directory
      */
     protected function _saveFiles(&$files, &$totalSize)
     {
-        /** @var Core_Disc_Model_File $child */
+        /** @var File $child */
         foreach ($this->getChildFiles() as $child) {
             try {
                 $child->setMainPath($this->getMainPath());
@@ -311,16 +322,16 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * as parameter give Disc object or configuration array
      * if in array name will be set up, will create file
      * 
-     * @param Core_Disc_Model_File|Core_Disc_Model_Directory|array $child
-     * @return Core_Disc_Model_Directory
+     * @param File|Directory|array $child
+     * @return Directory
      */
     public function addChild($child)
     {
         if (is_array($child)) {
             if (isset($child['name'])) {
-                $child = Loader::getClass('Core_Disc_Model_File', $child);
+                $child = Loader::getClass('Core\Disc\Model\File', $child);
             } else {
-                $child = Loader::getClass('Core_Disc_Model_Directory', $child);
+                $child = Loader::getClass('Core\Disc\Model\Directory', $child);
             }
         }
 
@@ -335,8 +346,8 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * as parameter give Disc object or configuration array
      * if in array name will be set up, will create file
      * 
-     * @param Core_Disc_Model_File|array $child
-     * @return Core_Disc_Model_Directory
+     * @param File|array $child
+     * @return Directory
      */
     public function addChildFile($child)
     {
@@ -344,7 +355,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
             $child = Loader::getClass('Core_Disc_Model_File', $child);
         }
 
-        if (!$child instanceof Core_Disc_Model_File) {
+        if (!$child instanceof File) {
             return $this;
         }
 
@@ -363,8 +374,8 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
      * as parameter give Disc object or configuration array
      * if in array name will be set up, will create file
      *
-     * @param Core_Disc_Model_Directory|array $child
-     * @return Core_Disc_Model_Directory
+     * @param Directory|array $child
+     * @return Directory
      */
     public function addChildDirectory($child)
     {
@@ -372,7 +383,7 @@ class Core_Disc_Model_Directory extends Core_Blue_Model_Object implements Core_D
             $child = Loader::getClass('Core_Disc_Model_Directory', $child);
         }
 
-        if (!$child instanceof Core_Disc_Model_Directory) {
+        if (!$child instanceof Directory) {
             return $this;
         }
 

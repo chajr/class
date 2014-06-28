@@ -7,7 +7,9 @@
  * @author      chajr <chajr@bluetree.pl>
  * @todo read some config from shell ini file (without usage main configuration file)
  */
-abstract class Core_Shell_Model_Abstract
+namespace Core\Shell\Model;
+use Loader;
+abstract class ModelAbstract
 {
     const HEADER = <<<EOT
  ____    ___                    __                          
@@ -115,7 +117,7 @@ EOT;
     /**
      * prepare header for browser
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _browserPageStart()
     {
@@ -129,7 +131,7 @@ EOT;
     /**
      * prepare footer for browser page
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _browserPageEnd()
     {
@@ -143,7 +145,7 @@ EOT;
     /**
      * parse input arguments
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _parseInput()
     {
@@ -163,7 +165,7 @@ EOT;
     /**
      * parse arguments from shell command
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _parseShellInput()
     {
@@ -192,7 +194,7 @@ EOT;
     /**
      * parse arguments from browser
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _parseBrowserInput()
     {
@@ -206,7 +208,7 @@ EOT;
     /**
      * check that script can be lunched
      *
-     * @return Core_Shell_Model_Abstract
+     * @return ModelAbstract
      */
     protected function _checkAccess()
     {

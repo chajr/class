@@ -7,26 +7,37 @@
  * @package     Core
  * @subpackage  Benchmark
 */
-class Core_Benchmark_Helper_Tracer
+namespace Core\Benchmark\Helper;
+use Loader;
+use Exception;
+class Tracer
 {
     /**
      * contains data to display
-     * @var string 
+     * 
+     * @var string
      */
     protected static $_display = '';
 
     /**
      * keep information about marker times
+     * 
      * @var array
      */
     protected static $_session = array();
 
     /**
      * information that tracer is on, or off
-     * @var boolean 
+     * 
+     * @var boolean
      */
     protected static $_tracerOn = TRUE;
-    
+
+    /**
+     * styles for table
+     * 
+     * @var array
+     */
     protected static $_divStyles = [
         'c'            => 'width:3%;float:left;padding:5px 0',
         'name'         => 'width:12%;float:left;padding:5px 0',
@@ -41,12 +52,14 @@ class Core_Benchmark_Helper_Tracer
 
     /**
      * if set to false tracing data wont be displayed, for only saving file
-     * @var boolean 
+     * 
+     * @var boolean
      */
     static $display = TRUE;
 
     /**
      * contains number of step for current given marker
+     * 
      * @var integer
      */
     static $traceStep = 0;
@@ -68,8 +81,8 @@ class Core_Benchmark_Helper_Tracer
     /**
      * create marker with given data
      * optionally add debug_backtrace and marker background color
-     * @param array $data
      * 
+     * @param array $data
      * @example marker(array('marker name'))
      * @example marker(array('marker name', debug_backtrace()))
      * @example marker(array('marker name', debug_backtrace(), '#000000'))
@@ -103,7 +116,11 @@ class Core_Benchmark_Helper_Tracer
             if (isset($data[1][0]['args']) && is_array($data[1][0]['args'])) {
                 foreach ($data[1][0]['args'] as $arg => $val) {
                     if (is_object($val)) {
-                        $data[1][0]['args'][$arg] = serialize($val);
+                        try {
+                            $data[1][0]['args'][$arg] = serialize($val);
+                        } catch (Exception $e) {
+                            $data[1][0]['args'][$arg] = $e->getMessage();
+                        }
                     }
                 }
             }

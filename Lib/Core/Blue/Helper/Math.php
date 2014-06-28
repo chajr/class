@@ -6,7 +6,8 @@
  * @subpackage  Math
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Blue_Helper_Math
+namespace Core\Blue\Helper;
+class Math
 {
     /**
      * Calculates percent difference between two numbers

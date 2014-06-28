@@ -8,7 +8,10 @@
  * @author      Michał Adamiak    <chajr@bluetree.pl>
  * @copyright   chajr/bluetree
  */
-class Core_Db_Helper_Pdo_Mysql extends Core_Db_Helper_Mysql
+namespace Core\Db\Helper\Pdo;
+use Core\Db\Helper;
+use PDOStatement;
+class Mysql extends Helper\Mysql
 {
     /**
      * default constructor options
@@ -75,7 +78,7 @@ class Core_Db_Helper_Pdo_Mysql extends Core_Db_Helper_Mysql
 
         $lib = $this->_connectionObject;
 
-        /** @var Core_Db_Helper_Connection_Pdo $connection */
+        /** @var Helper\Connection\Pdo $connection */
         $connection = $lib::$connections[$this->_connection];
         $bool       = $connection->query($sql);
 

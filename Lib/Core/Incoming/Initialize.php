@@ -6,7 +6,11 @@
  * @subpackage  Incoming
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Incoming_Initialize extends Core_Blue_Model_Initialize_Abstract
+namespace Core\Incoming;
+use Core\Blue\Model\Initialize\InitAbstract;
+use Exception;
+use Loader;
+class Initialize extends InitAbstract
 {
     /**
      * Initialize incoming data models
@@ -14,11 +18,11 @@ class Core_Incoming_Initialize extends Core_Blue_Model_Initialize_Abstract
     public function init()
     {
         try {
-            Loader::getObject('Core_Incoming_Model_Get', '', 'GET');
-            Loader::getObject('Core_Incoming_Model_Post', '', 'POST');
-            Loader::getObject('Core_Incoming_Model_Cookie', '', 'COOKIE');
-            Loader::getObject('Core_Incoming_Model_Session', '', 'SESSION');
-            Loader::getObject('Core_Incoming_Model_File', '', 'FILE');
+            Loader::getObject('Core\Incoming\Model\Get', '', 'GET');
+            Loader::getObject('Core\Incoming\Model\Post', '', 'POST');
+            Loader::getObject('Core\Incoming\Model\Cookie', '', 'COOKIE');
+            Loader::getObject('Core\Incoming\Model\Session', '', 'SESSION');
+            Loader::getObject('Core\Incoming\Model\File', '', 'FILE');
         } catch (Exception $e) {
             Loader::exceptions($e);
         }

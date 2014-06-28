@@ -6,7 +6,9 @@
  * @subpackage  Date
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_Time_Helper_Date
+namespace Core\Time\Helper;
+use Core\Time\Helper\Simple\Date as SimpleDate;
+class Date
 {
     /**
      * contains unix timestamp
@@ -21,7 +23,7 @@ class Core_Time_Helper_Date
     public $err;
 
     /**
-     * inform to use convert method from Core_Time_Helper_Simple_Date to fix text (default FALSE)
+     * inform to use convert method from SimpleDate to fix text (default FALSE)
      * @var boolean 
      */
     public $useConversion = FALSE;
@@ -50,7 +52,7 @@ class Core_Time_Helper_Date
             $this->_unixTimestamp = $date;
         } elseif (is_array($date)) {
             $dateArray   = array($date[4], $date[3], $date[5]);
-            $valid       = Core_Time_Helper_Simple_Date::valid($dateArray);
+            $valid       = SimpleDate::valid($dateArray);
 
             if (!$valid) {
                 $this->err = 'INVALID_TIME_FORMAT';
@@ -82,7 +84,7 @@ class Core_Time_Helper_Date
      * allow to set new timestamp
      * 
      * @param integer $stamp
-     * @return Core_Time_Helper_Date
+     * @return Date
      */
     public function setStamp($stamp)
     {
@@ -100,7 +102,7 @@ class Core_Time_Helper_Date
     */
     public function getFormattedTime()
     {
-        return Core_Time_Helper_Simple_Date::getFormattedTime($this->_unixTimestamp);
+        return SimpleDate::getFormattedTime($this->_unixTimestamp);
     }
 
     /**
@@ -113,7 +115,7 @@ class Core_Time_Helper_Date
      */
     public function getDate($type = FALSE)
     {
-        return Core_Time_Helper_Simple_Date::getDate($this->_unixTimestamp, $type);
+        return SimpleDate::getDate($this->_unixTimestamp, $type);
     }
     
     /**
@@ -123,7 +125,7 @@ class Core_Time_Helper_Date
      */
     public function getTime()
     {
-        return Core_Time_Helper_Simple_Date::getTime($this->_unixTimestamp);
+        return SimpleDate::getTime($this->_unixTimestamp);
     }
 
     /**
@@ -134,10 +136,10 @@ class Core_Time_Helper_Date
      */
     public function getMonthName($short = NULL)
     {
-        $month = Core_Time_Helper_Simple_Date::getMonthName($this->_unixTimestamp, $short);
+        $month = SimpleDate::getMonthName($this->_unixTimestamp, $short);
 
         if ($this->useConversion) {
-            $month = Core_Time_Helper_Simple_Date::convert(
+            $month = SimpleDate::convert(
                 $month,
                 $this->conversionArray['from'],
                 $this->conversionArray['to']
@@ -155,10 +157,10 @@ class Core_Time_Helper_Date
      */
     public function getDayName($short = NULL)
     {
-        $day = Core_Time_Helper_Simple_Date::getDayName($this->_unixTimestamp, $short);
+        $day = SimpleDate::getDayName($this->_unixTimestamp, $short);
 
         if ($this->useConversion) {
-            $day = Core_Time_Helper_Simple_Date::convert(
+            $day = SimpleDate::convert(
                 $day,
                 $this->conversionArray['from'],
                 $this->conversionArray['to']
@@ -180,10 +182,10 @@ class Core_Time_Helper_Date
      */
     public function getDay($name = FALSE, $short = FALSE)
     {
-        $day = Core_Time_Helper_Simple_Date::getDay($this->_unixTimestamp, $name, $short);
+        $day = SimpleDate::getDay($this->_unixTimestamp, $name, $short);
 
         if($this->useConversion){
-            $day = Core_Time_Helper_Simple_Date::convert(
+            $day = SimpleDate::convert(
                 $day,
                 $this->conversionArray['from'],
                 $this->conversionArray['to']
@@ -200,7 +202,7 @@ class Core_Time_Helper_Date
      */
     public function getDayNumber()
     {
-        return Core_Time_Helper_Simple_Date::getDayNumber($this->_unixTimestamp);
+        return SimpleDate::getDayNumber($this->_unixTimestamp);
     }
 
     /**
@@ -210,7 +212,7 @@ class Core_Time_Helper_Date
      */
     public function getDayInMonth()
     {
-        return Core_Time_Helper_Simple_Date::getDayInMonth($this->_unixTimestamp);
+        return SimpleDate::getDayInMonth($this->_unixTimestamp);
     }
 
     /**
@@ -220,7 +222,7 @@ class Core_Time_Helper_Date
      */
     public function getMonths()
     {
-        return Core_Time_Helper_Simple_Date::getMonths($this->_unixTimestamp);
+        return SimpleDate::getMonths($this->_unixTimestamp);
     }
 
     /**
@@ -231,7 +233,7 @@ class Core_Time_Helper_Date
      */
     public function isLeapYear()
     {
-        return Core_Time_Helper_Simple_Date::isLeapYear($this->_unixTimestamp);
+        return SimpleDate::isLeapYear($this->_unixTimestamp);
     }
 
     /**
@@ -243,17 +245,17 @@ class Core_Time_Helper_Date
      * @example miesiac()
      * @example miesiac(1)
      * @example miesiac(1, 1)
-     * @uses Core_Time_Helper_Simple_Date::miesiac()
-     * @uses Core_Time_Helper_Date::$unix_timestamp
-     * @uses Core_Time_Helper_Date::$conversion_array
-     * @uses Core_Time_Helper_Date::$use_conversion
+     * @uses SimpleDate::miesiac()
+     * @uses Date::$unix_timestamp
+     * @uses Date::$conversion_array
+     * @uses Date::$use_conversion
      */
     public function getMonth($name = FALSE, $short = FALSE)
     {
-        $month = Core_Time_Helper_Simple_Date::getMonth($this->_unixTimestamp, $name, $short);
+        $month = SimpleDate::getMonth($this->_unixTimestamp, $name, $short);
         
         if ($this->useConversion) {
-            $month = Core_Time_Helper_Simple_Date::convert(
+            $month = SimpleDate::convert(
                 $month,
                 $this->conversionArray['from'],
                 $this->conversionArray['to']
@@ -269,7 +271,7 @@ class Core_Time_Helper_Date
      */
     public function getYear()
     {
-        return Core_Time_Helper_Simple_Date::getYear($this->_unixTimestamp);
+        return SimpleDate::getYear($this->_unixTimestamp);
     }
 
     /**
@@ -279,7 +281,7 @@ class Core_Time_Helper_Date
      */
     public function getHour()
     {
-        return Core_Time_Helper_Simple_Date::getHour($this->_unixTimestamp);
+        return SimpleDate::getHour($this->_unixTimestamp);
     }
 
     /**
@@ -289,7 +291,7 @@ class Core_Time_Helper_Date
      */
     public function getMinutes()
     {
-        return Core_Time_Helper_Simple_Date::getMinutes($this->_unixTimestamp);
+        return SimpleDate::getMinutes($this->_unixTimestamp);
     }
 
     /**
@@ -299,7 +301,7 @@ class Core_Time_Helper_Date
      */
     public function getSeconds()
     {
-        return Core_Time_Helper_Simple_Date::getSeconds($this->_unixTimestamp);
+        return SimpleDate::getSeconds($this->_unixTimestamp);
     }
 
     /**
@@ -309,16 +311,16 @@ class Core_Time_Helper_Date
      */
     public function getWeek()
     {
-        return Core_Time_Helper_Simple_Date::getWeek($this->_unixTimestamp);
+        return SimpleDate::getWeek($this->_unixTimestamp);
     }
 
     /**
      * compare two dates, and check that rae the same
      * 
-     * @param Core_Time_Helper_Date $data
+     * @param Date $data
      * @return boolean return TRUE if dates are the same
      */
-    public function compareDates(Core_Time_Helper_Date $data)
+    public function compareDates(Date $data)
     {
         if ($data === $this->_unixTimestamp) {
             return TRUE;
@@ -333,7 +335,7 @@ class Core_Time_Helper_Date
      * if some value is same, will return 0
      * default differences will return sec, min, hour, day, week, months, years
      * 
-     * @param Core_Time_Helper_Date $data
+     * @param Date $data
      * @param string $differenceType type of differences (default all)
      * @param boolean $relative if FALSE will return absolute comparison, else depending of other parameters
      * @return mixed return difference, or array of differences
@@ -344,7 +346,7 @@ class Core_Time_Helper_Date
      * @example diff($data_object, 'hours')
      */
     public function getDifference(
-        Core_Time_Helper_Date $data,
+        Date $data,
         $differenceType = NULL,
         $relative       = NULL
     ){
@@ -452,7 +454,7 @@ class Core_Time_Helper_Date
         $formatted = strftime ($format, $this->_unixTimestamp);
 
         if($this->useConversion){
-            $formatted = Core_Time_Helper_Simple_Date::convert(
+            $formatted = SimpleDate::convert(
                 $formatted,
                 $this->conversionArray['from'],
                 $this->conversionArray['to']
@@ -469,17 +471,17 @@ class Core_Time_Helper_Date
      */
     public function checkDate()
     {
-        return Core_Time_Helper_Simple_Date::valid($this->_unixTimestamp);
+        return SimpleDate::valid($this->_unixTimestamp);
     }
 
     /**
      * return differences between seconds
      * 
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getSecondsDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getSecondsDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getSeconds() - $date->getSeconds();
@@ -492,11 +494,11 @@ class Core_Time_Helper_Date
     /**
      * return differences between minutes
      * 
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getMinutesDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getMinutesDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getMinutes() - $date->getMinutes();
@@ -509,11 +511,11 @@ class Core_Time_Helper_Date
     /**
      * return differences between hours
      *
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getHoursDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getHoursDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getHour() - $date->getHour();
@@ -526,11 +528,11 @@ class Core_Time_Helper_Date
     /**
      * return differences between weeks
      *
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getWeeksDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getWeeksDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getWeek() - $date->getWeek();
@@ -543,11 +545,11 @@ class Core_Time_Helper_Date
     /**
      * return differences between days
      *
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getDaysDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getDaysDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getDay() - $date->getDay();
@@ -560,11 +562,11 @@ class Core_Time_Helper_Date
     /**
      * return differences between months
      *
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @param boolean $relative absolute difference, or depending of set time
      * @return integer difference
      */
-    protected function _getMonthsDifference(Core_Time_Helper_Date $date, $relative)
+    protected function _getMonthsDifference(Date $date, $relative)
     {
         if ($relative) {
             return $this->getMonth() - $date->getMonth();
@@ -577,10 +579,10 @@ class Core_Time_Helper_Date
     /**
      * return differences between years
      *
-     * @param Core_Time_Helper_Date $date
+     * @param Date $date
      * @return integer difference
      */
-    protected function _getYearsDifference(Core_Time_Helper_Date $date)
+    protected function _getYearsDifference(Date $date)
     {
         return $this->getYear() - $date->getYear();
     }
@@ -588,13 +590,12 @@ class Core_Time_Helper_Date
     /**
      * return difference between seconds for given time
      * 
-     * @param Core_Time_Helper_Date $data
+     * @param Date $data
      * @return integer difference
      */
-    private function _calculateTimeDifference(Core_Time_Helper_Date $data)
+    private function _calculateTimeDifference(Date $data)
     {
         $data = (int)$data->__toString();
-
         return $this->_unixTimestamp - $data;
     }
 }

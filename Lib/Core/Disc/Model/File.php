@@ -6,7 +6,14 @@
  * @subpackage  Disc
  * @author      chajr <chajr@bluetree.pl>
  */
-class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_Model_Interface
+namespace Core\Disc\Model;
+use Core\Blue\Model\Object;
+use Core\Disc\Helper\Common;
+use Core\Incoming\Model;
+use Loader;
+use Exception;
+use SplFileInfo;
+class File extends Object implements ModelInterface
 {
     /**
      * base configuration for file
@@ -46,7 +53,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
     /**
      * remove file, or object data if file not exists
      *
-     * @return Core_Disc_Model_File
+     * @return File
      * @throws Exception
      */
     public function delete()
@@ -54,8 +61,8 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         Loader::tracer('delete file object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('delete_file_object_instance_before', $this);
 
-        if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
-            $bool = Core_Disc_Helper_Common::delete($this->_getFullPath());
+        if (Model\File::exist($this->_getFullPath())) {
+            $bool = Common::delete($this->_getFullPath());
 
             if (!$bool) {
                 Loader::callEvent('delete_file_object_instance_error', $this);
@@ -71,7 +78,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
     /**
      * save file object
      * 
-     * @return Core_Disc_Model_File
+     * @return File
      * @throws Exception
      */
     public function save()
@@ -89,7 +96,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
             return $this;
         }
 
-        $bool = Core_Disc_Helper_Common::mkfile(
+        $bool = Common::mkfile(
             $this->getMainPath(),
             $this->_getFullName(),
             $this->getContent()
@@ -110,7 +117,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
     /**
      * load file into object
      * 
-     * @return Core_Disc_Model_File
+     * @return File
      * @throws Exception
      */
     public function load()
@@ -118,7 +125,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         Loader::tracer('load file into object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('load_file_object_instance_before', $this);
 
-        if (!Core_Incoming_Model_File::exist($this->_getFullPath())) {
+        if (!Model\File::exist($this->_getFullPath())) {
             Loader::callEvent('load_file_object_instance_error', $this);
             throw new Exception ('file not exists: ' . $this->_getFullPath());
         }
@@ -161,20 +168,20 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      *
      * @param string $destination
      * @throws Exception
-     * @return Core_Disc_Model_File
+     * @return File
      */
     public function move($destination){
         Loader::tracer('move file object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('move_file_object_instance_before', [$this, &$destination]);
 
-        if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
+        if (Model\File::exist($this->_getFullPath())) {
             $targetPath = $destination . $this->_getFullName();
-            $bool       = Core_Disc_Helper_Common::move(
+            $bool       = Common::move(
                 $this->_getFullPath(),
                 $targetPath
             );
         } else {
-            $bool = Core_Disc_Helper_Common::mkfile(
+            $bool = Common::mkfile(
                 $destination,
                 $this->_getFullName(),
                 $this->getContent()
@@ -204,7 +211,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      * !!!! AFTER COPY RETURN INSTANCE OF COPIED FILE, NOT BASE FILE !!!!
      * 
      * @param string $destination
-     * @return Core_Disc_Model_File
+     * @return File
      * @throws Exception
      */
     public function copy($destination)
@@ -212,14 +219,14 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
         Loader::tracer('copy file object instance', debug_backtrace(), '6802cf');
         Loader::callEvent('copy_file_object_instance_before', [$this, &$destination]);
 
-        if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
+        if (Model\File::exist($this->_getFullPath())) {
             $targetPath = $destination . $this->_getFullName();
-            $bool       = Core_Disc_Helper_Common::copy(
+            $bool       = Common::copy(
                 $this->_getFullPath(),
                 $targetPath
             );
         } else {
-            $bool = Core_Disc_Helper_Common::mkfile(
+            $bool = Common::mkfile(
                 $destination,
                 $this->_getFullName(),
                 $this->getContent()
@@ -249,7 +256,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
      * 
      * @param string $name
      * @param null|string $extension
-     * @return Core_Disc_Model_File
+     * @return File
      * @throws Exception
      */
     public function rename($name, $extension = NULL)
@@ -259,8 +266,8 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
 
         $bool = TRUE;
 
-        if (Core_Incoming_Model_File::exist($this->_getFullPath())) {
-            $bool = Core_Disc_Helper_Common::move(
+        if (Model\File::exist($this->_getFullPath())) {
+            $bool = Common::move(
                 $this->_getFullPath(),
                 $name . '.' . $extension
             );
@@ -289,7 +296,7 @@ class Core_Disc_Model_File extends Core_Blue_Model_Object implements Core_Disc_M
     /**
      * set file information at real existing file
      * 
-     * @return Core_Disc_Model_File
+     * @return File
      */
     protected function _updateFileInfo()
     {

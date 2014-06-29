@@ -60,7 +60,7 @@ abstract class GridAbstract extends View\ViewAbstract
 
             /** @var Row $renderer */
             $renderer = Loader::getClass(
-                'Core_Render_View_Grid_Row', [
+                'Core\Render\View\Grid\Row', [
                     'template'      => $this->_options['template'],
                     'module'        => $this->_options['module'],
                     'data'          => $this->_getDataFromFow($row),

@@ -352,7 +352,7 @@ class Directory extends Object implements ModelInterface
     public function addChildFile($child)
     {
         if (is_array($child)) {
-            $child = Loader::getClass('Core_Disc_Model_File', $child);
+            $child = Loader::getClass('Core\Disc\Model\File', $child);
         }
 
         if (!$child instanceof File) {
@@ -380,7 +380,7 @@ class Directory extends Object implements ModelInterface
     public function addChildDirectory($child)
     {
         if (is_array($child)) {
-            $child = Loader::getClass('Core_Disc_Model_Directory', $child);
+            $child = Loader::getClass('Core\Disc\Model\Directory', $child);
         }
 
         if (!$child instanceof Directory) {

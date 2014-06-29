@@ -248,7 +248,7 @@ class File extends Object implements ModelInterface
         $this->_updateFileInfo();
 
         Loader::callEvent('copy_file_object_instance_after', [$this]);
-        return Loader::getClass('Core_Disc_Model_File', $data)->load();
+        return Loader::getClass('Core\Disc\Model\File', $data)->load();
     }
 
     /**

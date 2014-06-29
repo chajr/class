@@ -121,8 +121,8 @@ abstract class ViewAbstract
 
         $newData            = $this->_getMarkersFromSession($this->_options['data']);
         $this->_session     = Loader::getObject('SESSION');
-        $this->_templates   = Loader::getClass('Core_Blue_Model_Object');
-        $this->_markers     = Loader::getClass('Core_Blue_Model_Object', $newData);
+        $this->_templates   = Loader::getClass('Core\Blue\Model\Object');
+        $this->_markers     = Loader::getClass('Core\Blue\Model\Object', $newData);
 
         $this->_setCacheName();
         $this->_createMainLayout($template);

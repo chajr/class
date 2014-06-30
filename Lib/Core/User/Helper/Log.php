@@ -6,7 +6,10 @@
  * @subpackage  User
  * @author      chajr   <chajr@bluetree.pl>
  */
-class Core_User_Helper_Log
+namespace Core\User\Helper;
+use Core\Incoming\Model\Session;
+use Exception;
+class Log
 {
     /**
      * name for $_SESSION global array model
@@ -20,7 +23,7 @@ class Core_User_Helper_Log
 
     /**
      * contains session model
-     * @var array|Core_Incoming_Model_Session
+     * @var array|Session
      */
     protected static $_sessionModel;
 
@@ -28,7 +31,7 @@ class Core_User_Helper_Log
      * set in variable correct session model
      * allowed is $_SESSION global array or session object
      *
-     * @param array|Core_Incoming_Model_Session $model
+     * @param array|Session $model
      */
     public static function setSessionModel(&$model)
     {
@@ -85,7 +88,7 @@ class Core_User_Helper_Log
     /**
      * check given model type and return its name or false if incorrect model
      *
-     * @return bool|array|Core_Incoming_Model_Session
+     * @return bool|array|Session
      */
     protected static function _getModelType()
     {
@@ -93,7 +96,7 @@ class Core_User_Helper_Log
             return self::SESSION_ARRAY;
         }
 
-        if (self::$_sessionModel instanceof Core_Incoming_Model_Session) {
+        if (self::$_sessionModel instanceof Session) {
             return self::SESSION_CLASS;
         }
 

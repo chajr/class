@@ -224,7 +224,7 @@ class Diagnose extends ModelAbstract
         }
 
         if ($this->_configuration->getCoreDb()->getConnectPdo() === 'enabled') {
-            $this->_databaseAccess('Pdo_Mysql');
+            $this->_databaseAccess('Pdo\Mysql');
         }
     }
 
@@ -415,7 +415,7 @@ class Diagnose extends ModelAbstract
                 $config['connection_name'] = $connection;
 
                 $conn = Loader::getObject(
-                    'Core_Db_Helper_Connection_' . ucfirst($type),
+                    'Core\Db\Helper\Connection\\' . ucfirst($type),
                     $config
                 );
 

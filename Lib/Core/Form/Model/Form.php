@@ -26,7 +26,7 @@ class Form
         'pattern_symbol'            => '#',
         'validation_class'          => 'Validator\Simple',
 
-        'module_name'               => 'Core_Form',
+        'module_name'               => 'Core\Form',
         'form_container_template'   => 'form/container.html',
         'container_renderer'        => 'Core\Form\View\Container',
         'container_cache'           => TRUE,

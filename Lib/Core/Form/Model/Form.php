@@ -24,11 +24,11 @@ class Form
         'attributes_to_hide'        => [],
         'use_error_node'            => TRUE,
         'pattern_symbol'            => '#',
-        'validation_class'          => 'Validator_Simple',
+        'validation_class'          => 'Validator\Simple',
 
         'module_name'               => 'Core_Form',
         'form_container_template'   => 'form/container.html',
-        'container_renderer'        => 'Core_Form_View_Container',
+        'container_renderer'        => 'Core\Form\View\Container',
         'container_cache'           => TRUE,
         'container_data_cache'      => FALSE,
         'form_configuration'        => [

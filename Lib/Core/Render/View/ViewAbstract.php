@@ -51,6 +51,7 @@ abstract class ViewAbstract
         'optional_markers'  => '#{;op;([\\w-])+;}#',
         'optional_start'    => '{;op;',
         'optional_end'      => '{;op_end;',
+        'view'              => '{;view;',
     ];
 
     /**
@@ -470,7 +471,7 @@ abstract class ViewAbstract
         }
 
         try {
-            //$this->_joinTemplates();
+            $this->_joinTemplates();
             $this->_renderMarkers();
             $this->_path();
             $this->_clean();
@@ -486,37 +487,55 @@ abstract class ViewAbstract
     }
 
     /**
-     * join all templates added to main renderer
+     * render and join all templates added to main renderer
      * 
      * @return ViewAbstract
-     * @todo fix and check
      */
-/*
- * xml z definicja wszystkich view na stronie
- * tam przypisanie do konkretnych blokow
- * inaczej przypisuje do mod
- * dodac metoda ktora ma addChild
- * 
- */
-//    protected function _joinTemplates()
-//    {
-//        foreach ($this->_templates->getData() as $template => $content) {
-//
-//            if ($template === self::MAIN_TEMPLATE_KEY_NAME) {
-//                continue;
-//            }
-//
-//            $mainTemplate = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
-//            $mainTemplate = str_replace(
-//                '{;mod;' . $template . ';}',
-//                $content,
-//                $mainTemplate
-//            );
-//            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
-//        }
-//
-//        return $this;
-//    }
+    protected function _joinTemplates()
+    {
+        foreach ($this->_templates->getData() as $template => $content) {
+            $isMainTemplate = $template === self::MAIN_TEMPLATE_KEY_NAME;
+            $isViewObject   = !($content instanceof ViewAbstract);
+            if ($isMainTemplate && $isViewObject) {
+                continue;
+            }
+
+            /** @var ViewAbstract $content */
+            $mainTemplate = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+            $mainTemplate = str_replace(
+                $this->_contentMarkers['view'] . $template . $this->_contentMarkers['marker_end'],
+                $content->render(),
+                $mainTemplate
+            );
+            $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $mainTemplate);
+        }
+
+        return $this;
+    }
+
+    /**
+     * add view class to be rendered at end
+     * 
+     * @param ViewAbstract $view
+     * @param string $name
+     * @return ViewAbstract
+     */
+    public function addView(ViewAbstract $view, $name)
+    {
+        $this->_templates->setData($name, $view);
+        return $this;
+    }
+
+    /**
+     * return ViewAbstract object to make changes
+     * 
+     * @param string $name
+     * @return ViewAbstract
+     */
+    public function getView($name)
+    {
+        return $this->_templates->getData($name);
+    }
 
     /**
      * render content to markers

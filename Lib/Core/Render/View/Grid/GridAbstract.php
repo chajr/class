@@ -7,7 +7,6 @@
  * @author      chajr <chajr@bluetree.pl>
  * @todo cache usage
  * @todo external template usage
- * @todo row custom renderer
  */
 namespace Core\Render\View\Grid;
 use Core\Render\View;
@@ -15,12 +14,19 @@ use Core\Blue\Model;
 use Loader;
 abstract class GridAbstract extends View\ViewAbstract
 {
+    const DEFAULT_RENDERER = 'Core\Render\View\Grid\Row';
+
     /**
      * string used to join many content for one marker
      *
      * @var string
      */
     protected $_contentGlue = "\n";
+
+    /**
+     * @var null|Row
+     */
+    protected $_customRowRenderer = NULL;
 
     /**
      * initialize grid renderer
@@ -58,9 +64,16 @@ abstract class GridAbstract extends View\ViewAbstract
         foreach ($data as $row) {
             $this->changeRowData($row);
 
+            if ($this->_customRowRenderer) {
+                $renderer = $this->_customRowRenderer;
+            } else {
+                $renderer = self::DEFAULT_RENDERER;
+            }
+
             /** @var Row $renderer */
             $renderer = Loader::getClass(
-                'Core\Render\View\Grid\Row', [
+                $renderer,
+                [
                     'template'      => $this->_options['template'],
                     'module'        => $this->_options['module'],
                     'data'          => $this->_getDataFromFow($row),
@@ -75,6 +88,29 @@ abstract class GridAbstract extends View\ViewAbstract
 
         Loader::callEvent('render_grid_object_after', $this);
         return implode($this->_contentGlue, $renderedContent);
+    }
+
+    /**
+     * set custom renderer to render row
+     * give full class name with path
+     * 
+     * @param string $renderer
+     * @return GridAbstract
+     */
+    public function serRowRenderer($renderer)
+    {
+        $this->_customRowRenderer = $renderer;
+        return $this;
+    }
+
+    /**
+     * return custom renderer class name
+     * 
+     * @return string
+     */
+    public function getRowRenderer()
+    {
+        return $this->_customRowRenderer;
     }
 
     /**

@@ -59,6 +59,7 @@ class Loader
             $this->_checkTemp();
             $this->_setRegister();
             $this->_loadConfiguration();
+            $this->_setBaseConfiguration();
             $this->_initModules();
         } catch (Exception $e) {
             self::exceptions($e);
@@ -106,6 +107,19 @@ class Loader
         }
 
         return $this;
+    }
+
+    /**
+     * set some system configuration
+     */
+    protected function _setBaseConfiguration()
+    {
+        /** @var Model\Configuration $config */
+        $config = self::getConfiguration();
+
+        mb_internal_encoding(
+            $config->getCore()->getDefaultCharset()
+        );
     }
 
     /**

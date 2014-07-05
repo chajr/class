@@ -5,10 +5,10 @@
  * @package     Core
  * @subpackage  Shell
  * @author      chajr <chajr@bluetree.pl>
- * @todo read some config from shell ini file (without usage main configuration file)
  */
 namespace Core\Shell\Model;
 use Loader;
+use Core\Blue\Model\Configuration;
 abstract class ModelAbstract
 {
     const HEADER = <<<EOT
@@ -33,6 +33,8 @@ abstract class ModelAbstract
 |___/_| |_|\___|_|_| |___/\___|_|  |_| .__/ \__|
                                      |_|        
 EOT;
+
+    const ALL_CONFIGURATION = 'all';
 
     /**
      * input arguments
@@ -95,8 +97,15 @@ EOT;
     protected $_disableHeader = FALSE;
 
     /**
+     * store modules configuration
+     * 
+     * @var array
+     */
+    protected $_configurationCache = [];
+
+    /**
      * parse input parameters and start shell script
-     * @todo read some data from configuration file
+     * @todo read some data from configuration file and move all config to ini
      */
     public function __construct()
     {
@@ -112,6 +121,93 @@ EOT;
         $this->_showHelp();
         $this->run();
         $this->_browserPageEnd();
+    }
+
+    /**
+     * get configuration for specified module
+     * or merged configuration for all modules
+     * 
+     * @param string $configuration
+     * @param string $module
+     * @return null|mixed
+     * 
+     * @example _getConfiguration('some_config', 'Some\Module');
+     * @example _getConfiguration('some_config', 'all');
+     */
+    protected function _readConfiguration($configuration, $module = self::ALL_CONFIGURATION)
+    {
+        $cachedModule  = isset($this->_configurationCache[$module]);
+        $configuration = isset($this->_configurationCache[$module][$configuration]);
+        if ($cachedModule && $configuration) {
+            return $this->_configurationCache[$module][$configuration];
+        }
+
+        if ($module === self::ALL_CONFIGURATION) {
+            return $this->_getCompleteConfiguration($configuration);
+        } else {
+            return $this->_getModuleConfiguration($configuration, $module);
+        }
+    }
+
+    /**
+     * get all merged configuration using Core\Blue\Model\Configuration
+     * 
+     * @param string $configuration
+     * @return null|mixed
+     */
+    protected function _getCompleteConfiguration($configuration)
+    {
+        $config                                             = new Configuration();
+        $cachedConfiguration                                = $config->getData();
+        $this->_configurationCache[self::ALL_CONFIGURATION] = $cachedConfiguration;
+
+        if (isset($cachedConfiguration[$configuration])) {
+            return $cachedConfiguration[$configuration];
+        }
+
+        return NULL;
+    }
+
+    /**
+     * get configuration for specified module
+     * 
+     * @param string $configuration
+     * @param string $module
+     * @return null|mixed
+     */
+    protected function _getModuleConfiguration($configuration, $module)
+    {
+        $basePath   = CORE_LIB . Loader::name2path($module) . '/etc/config.';
+        $ini        = $basePath . 'ini';
+        $json       = $basePath . 'json';
+        $php        = $basePath . 'php';
+
+        switch (TRUE) {
+            case file_exists($ini):
+                $data = parse_ini_file($ini, TRUE);
+                break;
+
+            case file_exists($json):
+                $data = file_get_contents($json);
+                $data = json_decode($data, TRUE);
+                break;
+
+            case file_exists($php):
+                $data =  file_get_contents($php, TRUE);
+                break;
+
+            default:
+                return NULL;
+                break;
+        }
+
+        $this->_configurationCache[$module] = $data;
+
+        if (isset($data[$configuration])) {
+            return $data[$configuration];
+        }
+
+        return NULL;
     }
 
     /**

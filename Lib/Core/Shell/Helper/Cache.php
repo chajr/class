@@ -39,7 +39,7 @@ class Cache extends ModelAbstract
      */
     protected function _beforeRun()
     {
-        $this->_allowBrowser = TRUE;
+        $this->_setShellConfiguration('allow_browser', 'enabled');
     }
 
     /**

@@ -55,46 +55,11 @@ EOT;
     ];
 
     /**
-     * value of special variable tu run script from browser
-     *
-     * @var string
-     */
-    protected $_forceScriptRun = 'true';
-
-    /**
      * information that script was lunched from browser
      *
      * @var bool
      */
     protected $_isBrowser = FALSE;
-
-    /**
-     * information that script can be lunched from browser
-     *
-     * @var bool
-     */
-    protected $_allowBrowser = FALSE;
-
-    /**
-     * turn off colorize string
-     *
-     * @var bool
-     */
-    protected $_noColors = FALSE;
-
-    /**
-     * value for point that [OK] or [ERROR] string will show up
-     * 
-     * @var int
-     */
-    protected $_infoAlign = 30;
-
-    /**
-     * disable graphics header from output
-     * 
-     * @var bool
-     */
-    protected $_disableHeader = FALSE;
 
     /**
      * store modules configuration
@@ -105,7 +70,6 @@ EOT;
 
     /**
      * parse input parameters and start shell script
-     * @todo read some data from configuration file and move all config to ini
      */
     public function __construct()
     {
@@ -113,7 +77,8 @@ EOT;
         $this->_checkAccess();
         $this->_browserPageStart();
 
-        if (!$this->_disableHeader) {
+        $displayHeader = $this->_getShellConfiguration('display_header');
+        if ($displayHeader === 'enabled') {
             echo self::HEADER;
         }
 
@@ -137,8 +102,8 @@ EOT;
     protected function _readConfiguration($configuration, $module = self::ALL_CONFIGURATION)
     {
         $cachedModule  = isset($this->_configurationCache[$module]);
-        $configuration = isset($this->_configurationCache[$module][$configuration]);
-        if ($cachedModule && $configuration) {
+        $config        = isset($this->_configurationCache[$module][$configuration]);
+        if ($cachedModule && $config) {
             return $this->_configurationCache[$module][$configuration];
         }
 
@@ -177,7 +142,7 @@ EOT;
      */
     protected function _getModuleConfiguration($configuration, $module)
     {
-        $basePath   = CORE_LIB . Loader::name2path($module) . '/etc/config.';
+        $basePath   = CORE_LIB . Loader::name2path($module, FALSE) . '/etc/config.';
         $ini        = $basePath . 'ini';
         $json       = $basePath . 'json';
         $php        = $basePath . 'php';
@@ -208,6 +173,38 @@ EOT;
         }
 
         return NULL;
+    }
+
+    /**
+     * read configuration for shell script
+     * 
+     * @param string $config
+     * @return null|mixed
+     */
+    protected function _getShellConfiguration($config)
+    {
+        $data = $this->_readConfiguration('core_shell', 'Core\Shell');
+
+        if (isset($data[$config])) {
+            return $data[$config];
+        }
+
+        return NULL;
+    }
+
+    /**
+     * set configuration for shell script
+     * 
+     * @param string $key
+     * @param $value mixed
+     * @return ModelAbstract
+     */
+    protected function _setShellConfiguration($key, $value)
+    {
+        $this->_getShellConfiguration('');
+        $this->_configurationCache['Core\Shell']['core_shell'][$key] = $value;
+
+        return $this;
     }
 
     /**
@@ -252,7 +249,7 @@ EOT;
         }
 
         if ($this->getArgument('no-colors')) {
-            $this->_noColors = TRUE;
+            $this->_configurationCache['Core\Shell']['no_colors'] = 'enabled';
         }
 
         return $this;
@@ -308,9 +305,11 @@ EOT;
      */
     protected function _checkAccess()
     {
-        $isGet = isset($_GET['run']) && $_GET['run'] === $this->_forceScriptRun;
+        $forceScript = $this->_getShellConfiguration('force_script_run');
+        $isGet = isset($_GET['run']) && $_GET['run'] === $forceScript;
 
-        if ($isGet && $this->_allowBrowser) {
+        $allowBrowser = $this->_getShellConfiguration('allow_browser');
+        if ($isGet && $allowBrowser === 'enabled') {
             $this->_isBrowser = TRUE;
             return $this;
         }
@@ -384,7 +383,8 @@ EOT;
      */
     protected function _colorizeString($string, $type)
     {
-        if ($this->_noColors) {
+        $colors = $this->_getShellConfiguration('no_colors');
+        if ($colors === 'enabled') {
             $type = NULL;
         }
 
@@ -584,7 +584,8 @@ EOT;
             $length = strlen($key);
         }
 
-        $spaces = $this->_infoAlign - $length;
+        $align  = $this->_getShellConfiguration('info_align');
+        $spaces = $align - $length;
 
         for ($i = 1;$i <= $spaces; $i++) {
             $key .= ' ';

@@ -32,7 +32,7 @@ class Diagnose extends ModelAbstract
      */
     protected function _beforeRun()
     {
-        $this->_allowBrowser = TRUE;
+        $this->_setShellConfiguration('allow_browser', 'enabled');
     }
 
     /**
@@ -93,7 +93,7 @@ class Diagnose extends ModelAbstract
             }
 
             $moduleName     = Loader::code2name($module);
-            $libraryName    = $moduleName . '_Test_Diagnose';
+            $libraryName    = $moduleName . '\Test\Diagnose';
             $libraryPath    = CORE_LIB . Loader::name2path($libraryName, FALSE);
 
             if (file_exists($libraryPath)) {

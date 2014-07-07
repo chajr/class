@@ -59,7 +59,6 @@ class Loader
             $this->_checkTemp();
             $this->_setRegister();
             $this->_loadConfiguration();
-            $this->_setBaseConfiguration();
             $this->_initModules();
         } catch (Exception $e) {
             self::exceptions($e);
@@ -169,6 +168,7 @@ class Loader
         }
 
         self::$_configuration = new Model\Configuration();
+        $this->_setBaseConfiguration();
 
         return $this;
     }

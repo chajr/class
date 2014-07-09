@@ -31,6 +31,13 @@ class Loader
     protected static $_register;
 
     /**
+     * store disabled from future execution modules or packages
+     * 
+     * @var array
+     */
+    protected static $_disabled = [];
+
+    /**
      * @var array
      */
     protected $_skipConstructorMethods = [
@@ -63,6 +70,41 @@ class Loader
         } catch (Exception $e) {
             self::exceptions($e);
         }
+    }
+
+    /**
+     * stop executing all classes, turn off framework and make log file
+     * 
+     * @param string $message
+     */
+    static function stop($message)
+    {
+        $trace = debug_backtrace();
+        Loader::callEvent('stop_execution_before', [$message, $trace]);
+        Loader::tracer('stop executing', $trace, 'ff0000');
+
+        $message .= "\n\n" . $trace;
+        self::log('stop_execution', $message);
+
+        Loader::callEvent('stop_execution_after', [$message]);
+        exit;
+    }
+
+    /**
+     * allow to disable executing all class from given module or package
+     * USE LOWER CASE MODULE OR PACKAGE CODE
+     * 
+     * @param string $name
+     */
+    static function disable($name)
+    {
+        Loader::callEvent('disable_module_execution_before', [$name]);
+        Loader::tracer('stop executing module', debug_backtrace(), 'ff0000');
+
+        self::log('stop_module_execution', $name);
+        self::$_disabled[$name] = TRUE;
+
+        Loader::callEvent('disable_module_execution_after', [$name]);
     }
 
     /**
@@ -143,6 +185,10 @@ class Loader
                 continue;
             }
 
+            if ($this->_checkIsDisabled($module)) {
+                continue;
+            }
+
             $initialize = self::getConfiguration()->getData($module)->getInitialize();
             $modulePath = self::name2path(Loader::code2name($module), FALSE);
             $path       = CORE_LIB . $modulePath . '/Initialize.php';
@@ -154,6 +200,29 @@ class Loader
         }
 
         return $this;
+    }
+
+    /**
+     * check that module or package is disabled
+     * 
+     * @param string $name
+     * @return bool
+     */
+    protected static function _checkIsDisabled($name)
+    {
+        if (isset(self::$_disabled[$name])) {
+            self::log('disabled_module', $name);
+            return TRUE;
+        }
+
+        $package = self::code2package($name);
+
+        if (isset(self::$_disabled[$package])) {
+            self::log('disabled_module', $name);
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     /**
@@ -258,6 +327,17 @@ class Loader
     }
 
     /**
+     * return package name from module code
+     * 
+     * @param string $name
+     * @return string mixed
+     */
+    static function code2package($name)
+    {
+        return explode('_', $name)[0];
+    }
+
+    /**
      * return object instance, or create it with sets of arguments
      * optionally when create at instance give an instance name to take by that name instead of class name
      * 
@@ -269,6 +349,10 @@ class Loader
     static function getObject($class, $args = [], $instanceName = NULL)
     {
         Loader::tracer('get object', debug_backtrace(), '006c94');
+
+        if (self::_checkIsDisabled(self::name2module($class))) {
+            return NULL;
+        }
 
         $name = $class;
         if ($instanceName) {
@@ -305,6 +389,11 @@ class Loader
     static function getClass($name, $args = [])
     {
         Loader::tracer('create object', debug_backtrace(), '008e85');
+
+        if (self::_checkIsDisabled(self::name2module($name))) {
+            return NULL;
+        }
+
         if (self::$_register) {
             self::$_register->setClassCounter($name);
         }

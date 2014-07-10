@@ -104,3 +104,5 @@ stop_execution_before
 stop_execution_after
 disable_module_execution_before
 disable_module_execution_after
+init_module_error_mode_before
+init_module_error_mode_after

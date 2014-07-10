@@ -17,14 +17,15 @@ class Initialize extends InitAbstract
      */
     public function init()
     {
-        try {
-            Loader::getObject('Core\Incoming\Model\Get', '', 'GET');
-            Loader::getObject('Core\Incoming\Model\Post', '', 'POST');
-            Loader::getObject('Core\Incoming\Model\Cookie', '', 'COOKIE');
-            Loader::getObject('Core\Incoming\Model\Session', '', 'SESSION');
-            Loader::getObject('Core\Incoming\Model\File', '', 'FILE');
-        } catch (Exception $e) {
-            Loader::exceptions($e);
-        }
+        Loader::getObject('Core\Incoming\Model\Get', '', 'GET');
+        Loader::getObject('Core\Incoming\Model\Post', '', 'POST');
+        Loader::getObject('Core\Incoming\Model\Cookie', '', 'COOKIE');
+        Loader::getObject('Core\Incoming\Model\Session', '', 'SESSION');
+        Loader::getObject('Core\Incoming\Model\File', '', 'FILE');
     }
+
+    /**
+     * handle lunch initialize in error mode
+     */
+    public function errorMode(){}
 }

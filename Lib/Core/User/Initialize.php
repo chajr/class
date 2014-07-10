@@ -14,4 +14,9 @@ class Initialize extends InitAbstract
     {
         
     }
+
+    /**
+     * handle lunch initialize in error mode
+     */
+    public function errorMode(){}
 }

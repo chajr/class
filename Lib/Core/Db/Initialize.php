@@ -72,4 +72,9 @@ class Initialize extends InitAbstract
 
         Loader::callEvent("connect_{$type}_after", $this);
     }
+
+    /**
+     * handle lunch initialize in error mode
+     */
+    public function errorMode(){}
 }

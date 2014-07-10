@@ -32,4 +32,9 @@ class Initialize extends InitAbstract
             Helper\Tracer::turnOffTracer();
         }
     }
+
+    /**
+     * handle lunch initialize in error mode
+     */
+    public function errorMode(){}
 }

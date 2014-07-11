@@ -60,6 +60,10 @@ class Mysql extends Driver implements ConnectionInterface
         $this->_options         = array_merge($this->_options, $options);
         self::$defaultCharset   = $this->_options['charset'];
 
+        if (empty($this->_options['host'])) {
+            return;
+        }
+
         parent::__construct(
             $this->_options['host'],
             $this->_options['username'],

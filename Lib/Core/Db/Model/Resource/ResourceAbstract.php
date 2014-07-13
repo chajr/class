@@ -912,8 +912,9 @@ abstract class ResourceAbstract extends Model\Object implements ResourceInterfac
     protected function _executeQuery()
     {
         /** @var Mysql $result */
-        $result      = Loader::getClass('Core\Db\Helper\Pdo\Mysql', $this->_query);
-        $hasErrors   = $result->err;
+        $result         = Loader::getClass('Core\Db\Helper\Pdo\Mysql', $this->_query);
+        $errorIsArray   = is_array($result->err);
+        $noError        = $errorIsArray && $result->err[0] === '00000';
 
         if ($result->id) {
             $this->setData($this->_columnId, $result->id);
@@ -921,12 +922,13 @@ abstract class ResourceAbstract extends Model\Object implements ResourceInterfac
 
         $this->_where = '';
 
-        if ($hasErrors) {
-            if (is_array($hasErrors)) {
-                $hasErrors = implode(', ', $hasErrors);
+        if ($result->err && !$noError) {
+            if ($errorIsArray) {
+                $error = implode(', ', $result->err);
+            } else {
+                $error = $result->err;
             }
-
-            throw new Exception('error with resource query ' . $hasErrors);
+            throw new Exception('error with resource query: ' . $error);
         }
 
         return $result;

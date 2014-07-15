@@ -1,0 +1,5 @@
+bin
+var/cache
+var/log
+var/tmp
+.idea

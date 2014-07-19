@@ -6,7 +6,7 @@
  * @subpackage  Render
  * @author      chajr <chajr@bluetree.pl>
  * @todo cache usage
- * @todo external template usage
+ * @todo external template usage (lunch loading external template on create main layout or on rendering)
  */
 namespace Core\Render\View\Grid;
 use Core\Render\View;

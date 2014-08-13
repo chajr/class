@@ -814,7 +814,18 @@ abstract class ViewAbstract
         }
     }
 
-    public function initializeBlock(){}
+    /**
+     * initialize block
+     * 
+     * @param array|null $options
+     */
+    public function initializeBlock(&$options)
+    {
+        
+    }
 
-    public function afterInitializeBlock(){}
+    public function afterInitializeBlock()
+    {
+        
+    }
 }

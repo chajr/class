@@ -51,7 +51,7 @@ class Date
         } elseif ($date && is_numeric($date)) {
             $this->_unixTimestamp = $date;
         } elseif (is_array($date)) {
-            $dateArray   = array($date[4], $date[3], $date[5]);
+            $dateArray   = [$date[3], $date[4], $date[5]];
             $valid       = SimpleDate::valid($dateArray);
 
             if (!$valid) {

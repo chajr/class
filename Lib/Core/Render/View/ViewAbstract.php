@@ -7,10 +7,12 @@
  * @author      chajr <chajr@bluetree.pl>
  */
 namespace Core\Render\View;
+
 use Loader;
 use Exception;
 use Core\Incoming\Model as Incoming;
 use Core\Blue\Model as Blue;
+
 abstract class ViewAbstract
 {
     const MAIN_TEMPLATE_KEY_NAME    = 'main_template';
@@ -18,6 +20,7 @@ abstract class ViewAbstract
     const SKIN_DEFAULT              = 'default';
     const CACHE_SUFFIX              = '_templates';
     const CACHE_DATA_SUFFIX         = '_templates_data';
+    const LOOP_KEY_PREFIX           = 'loop_data_';
 
     /**
      * string used to join many content for one marker
@@ -32,11 +35,13 @@ abstract class ViewAbstract
      */
     protected $_contentMarkers = [
         'markers'           => "#{;[\\w=\\-|&();\\/,]+;}#",
+        'marker_key'        => "[\\w=\\-|&();\\/,]+",
         'empty'             => "{;empty;}",
         'external'          => '#{;external;([\\w\/-])+;}#',
         'external_start'    => "{;external;",
         'marker_end'        => ";}",
         'marker_start'      => "{;",
+        'marker_delimiter'  => ";",
         'domain'            => '#{;core;domain;}#',
         'current_page'      => '#{;core;current_page;}#',
         'current_dir'       => '#{;core;current_dir;}#',
@@ -48,6 +53,8 @@ abstract class ViewAbstract
         'loop_markers'      => '#{;(start|end);([\\w-])+;}#',
         'loop_start'        => '{;start;',
         'loop_end'          => '{;end;',
+        'loop_start_empty'  => '{;start_empty;',
+        'loop_end_empty'    => '{;end_empty;',
         'optional_markers'  => '#{;op;([\\w-])+;}#',
         'optional_start'    => '{;op;',
         'optional_end'      => '{;op_end;',
@@ -59,14 +66,14 @@ abstract class ViewAbstract
      * 
      * @var Incoming\Session
      */
-    protected $_session = NULL;
+    protected $_session = null;
 
     /**
      * allow to remove or not unused markers
      * 
      * @var boolean
      */
-    protected $_clearMarkers = TRUE;
+    protected $_clearMarkers = true;
 
     /**
      * list of templates
@@ -96,11 +103,18 @@ abstract class ViewAbstract
      */
     protected $_options = [
         'template'      => '',
-        'data'          => NULL,
-        'module'        => NULL,
-        'cache'         => TRUE,
-        'cache_data'    => FALSE,
+        'data'          => null,
+        'module'        => null,
+        'cache'         => true,
+        'cache_data'    => false,
     ];
+
+    /**
+     * contains regular expression to detect loop marker
+     *
+     * @var string
+     */
+    protected $_loopMarkerPrefix;
 
     /**
      * create block instance
@@ -112,6 +126,7 @@ abstract class ViewAbstract
         Loader::tracer('start block abstract class', debug_backtrace(), '006400');
         Loader::callEvent('initialize_block_abstract_object_before', $this);
         $this->initializeBlock($options);
+        $this->_prepareLoopMarkerPrefix();
 
         if (is_string($options)) {
             $template = $options;
@@ -164,7 +179,7 @@ abstract class ViewAbstract
 
     /**
      * cascade search in skin directory for template
-     * if template was not found log information and return NULL
+     * if template was not found log information and return null
      * 
      * @param string $template
      * @return null|string
@@ -184,7 +199,7 @@ abstract class ViewAbstract
         $skinDefault            = self::CORE_SKIN_DIRECTORY . $template;
 
         if ($this->_options['module']) {
-            $modulePath             = Loader::name2path($this->_options['module'], FALSE);
+            $modulePath             = Loader::name2path($this->_options['module'], false);
             $currentSkinMod         = CORE_LIB . $modulePath . '/Skin/' . $currentSkin;
             $currentSkinDefaultMod  = CORE_LIB . $modulePath . '/Skin/' . $currentSkinDefault;
             $skinDefaultMod         = CORE_LIB . $modulePath . '/Skin/' . $skinDefault;
@@ -194,13 +209,11 @@ abstract class ViewAbstract
         $currentSkinDefaultCore = CORE_SKIN . $currentSkinDefault;
         $skinDefaultCore        = CORE_SKIN . $skinDefault;
 
-        switch (TRUE) {
+        switch (true) {
             case Incoming\File::exist($currentSkinMod):
                 return $currentSkinMod;
-
             case Incoming\File::exist($currentSkinCore):
                 return $currentSkinCore;
-
             case Incoming\File::exist($currentSkinDefaultMod):
                 return $currentSkinDefaultMod;
 
@@ -226,7 +239,7 @@ abstract class ViewAbstract
                     ],
                     'missing template'
                 );
-                return NULL;
+                return null;
         }
     }
 
@@ -390,13 +403,12 @@ abstract class ViewAbstract
      * allows to replace marker with content, or group of markers by array
      *
      * @param string|array $marker marker name or array (marker => value)
-     * @param string|boolean $content some string or NULL if marker array given
+     * @param string|boolean $content some string or null if marker array given
      * @return ViewAbstract
-     * 
      * @example generate('marker', 'content')
-     * @example generate(array('marker' => 'content', 'marker2' => 'other content'), '')
+     * @example generate(['marker' => 'content', 'marker2' => 'other content'], '')
      */
-    public function generate($marker, $content = NULL)
+    public function generate($marker, $content = null)
     {
         if (is_array($marker)) {
             foreach ($marker as $key => $value) {
@@ -407,6 +419,166 @@ abstract class ViewAbstract
         }
 
         return $this;
+    }
+
+    /**
+     * process array and generate proper for loop content
+     *
+     * @param string $marker
+     * @param array $contentArray
+     * @return ViewAbstract
+     * @example loop('marker', [[key => val], [key2 => val2]]);
+     */
+    public function loop($marker, array $contentArray)
+    {
+        $markerData = $this->_markers->getData(self::LOOP_KEY_PREFIX . $marker);
+
+        if ($markerData) {
+            array_push($markerData, $contentArray);
+            $contentArray = $markerData;
+        }
+
+        $this->_markers->setData(self::LOOP_KEY_PREFIX . $marker, $contentArray);
+        return $this;
+    }
+
+    /**
+     * render loop content
+     *
+     * @return ViewAbstract
+     */
+    protected function _renderLoops()
+    {
+        $keys       = array_keys($this->_markers->getData());
+        $content    = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
+
+        foreach ($keys as $markerKey) {
+            if (!preg_match($this->_loopMarkerPrefix, $markerKey)) {
+                continue;
+            }
+
+            $content = $this->_renderLoop($markerKey, $content);
+        }
+
+        $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
+        return $this;
+    }
+
+    /**
+     * render single loop
+     *
+     * @param string $marker
+     * @param string $content
+     * @return string
+     */
+    protected function _renderLoop($marker, $content)
+    {
+        $contentArray       = $this->_markers->getData($marker);
+        $markerKey          = str_replace(self::LOOP_KEY_PREFIX, '', $marker);
+        $loopStart          = $this->_contentMarkers['loop_start'];
+        $loopEnd            = $this->_contentMarkers['loop_end'];
+        $markerEnd          = $this->_contentMarkers['marker_end'];
+        $startEmpty         = $this->_contentMarkers['loop_start_empty'];
+        $endEmpty           = $this->_contentMarkers['loop_end_empty'];
+        $startMarker        = $loopStart . $markerKey . $markerEnd;
+        $endMarker          = $loopEnd . $markerKey . $markerEnd;
+        $messageStartMarker = $startEmpty . $markerKey . $markerEnd;
+        $messageEndMarker   = $endEmpty . $markerKey . $markerEnd;
+        $end                = '';
+        $loopContent        = $this->_getGroupMarkerContent(
+            $content,
+            $startMarker,
+            $endMarker
+        );
+
+        if ($loopContent === null) {
+            return $content;
+        }
+
+        if (empty($contentArray)) {
+            $content = str_replace($loopContent, '', $content);
+
+            $this->generate($messageStartMarker, '');
+            $this->generate($messageEndMarker, '');
+        } else {
+            foreach ($contentArray as $row) {
+                $tmp = $loopContent;
+
+                foreach($row as $key => $value){
+                    $model = $this->_contentMarkers['marker_start']
+                        . $markerKey
+                        . $this->_contentMarkers['marker_delimiter']
+                        . $key
+                        . $this->_contentMarkers['marker_end'];
+
+                    $tmp = str_replace($model, $value, $tmp);
+                }
+
+                $end .= $tmp;
+            }
+
+            $content = str_replace(
+                $loopContent,
+                $end,
+                $content
+            );
+
+            $emptyMessage = $this->_getGroupMarker(
+                $content,
+                $messageStartMarker,
+                $messageEndMarker
+            );
+
+            $content = str_replace($emptyMessage, '', $content);
+            $content = str_replace($startMarker, '', $content);
+            $content = str_replace($endMarker, '', $content);
+        }
+
+        return $content;
+    }
+
+    /**
+     * get whole loop content without markers of marker group from given content
+     *
+     * @param string $content
+     * @param string $startMarker
+     * @param string $endMarker
+     * @return null|string
+     */
+    protected function _getGroupMarkerContent($content, $startMarker, $endMarker)
+    {
+        $position1 = strpos($content, $startMarker);
+        $position1 = $position1 + mb_strlen($startMarker);
+        $position2 = strpos($content, $endMarker);
+        $position2 = $position2 - $position1;
+
+        if ($position2 < 0 || !$position1) {
+            return null;
+        }
+
+        return substr($content, $position1, $position2);
+    }
+
+    /**
+     * get whole loop content with markers of marker group (eg. loop marker and content)
+     *
+     * @param string $content
+     * @param string $startMarker
+     * @param string $endMarker
+     * @return null|string
+     */
+    protected function _getGroupMarker($content, $startMarker, $endMarker)
+    {
+        $position1 = strpos($content, $startMarker);
+        $position2 = strpos($content, $endMarker);
+        $position2 = $position2 + mb_strlen($endMarker);
+        $position2 = $position2 - $position1;
+
+        if ($position2 < 0 || !$position1) {
+            return null;
+        }
+
+        return substr($content, $position1, $position2);
     }
 
     /**
@@ -442,7 +614,7 @@ abstract class ViewAbstract
     protected function _checkContent($content)
     {
         if (is_array($content)) {
-            $exportContent = var_export($content, TRUE);
+            $exportContent = var_export($content, true);
             Loader::log('info', $exportContent, 'content as array');
 
             return serialize($content);
@@ -462,7 +634,7 @@ abstract class ViewAbstract
         Loader::tracer('render content of display class', debug_backtrace(), '006400');
         Loader::callEvent('render_template_before', $this);
 
-        $cache = $this->_templateCache(NULL, 'data');
+        $cache = $this->_templateCache(null, 'data');
         if ($cache && $this->_options['cache_data']) {
             $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $cache);
 
@@ -472,6 +644,7 @@ abstract class ViewAbstract
 
         try {
             $this->_joinTemplates();
+            $this->_renderLoops();
             $this->_renderMarkers();
             $this->_path();
             $this->_clean();
@@ -496,6 +669,7 @@ abstract class ViewAbstract
         foreach ($this->_templates->getData() as $template => $content) {
             $isMainTemplate = $template === self::MAIN_TEMPLATE_KEY_NAME;
             $isViewObject   = !($content instanceof ViewAbstract);
+
             if ($isMainTemplate && $isViewObject) {
                 continue;
             }
@@ -548,6 +722,10 @@ abstract class ViewAbstract
         $content    = $this->_templates->getData(self::MAIN_TEMPLATE_KEY_NAME);
 
         foreach ($keys as $markerKey) {
+            if (preg_match($this->_loopMarkerPrefix, $markerKey)) {
+                continue;
+            }
+
             $markerContent  = $this->_implodeContent($markerKey);
             $markerStart    = $this->_contentMarkers['marker_start'];
             $markerEnd      = $this->_contentMarkers['marker_end'];
@@ -556,6 +734,21 @@ abstract class ViewAbstract
         }
 
         $this->_templates->setData(self::MAIN_TEMPLATE_KEY_NAME, $content);
+        return $this;
+    }
+
+    /**
+     * prepare regular expression for loop markers
+     *
+     * @return ViewAbstract
+     */
+    protected function _prepareLoopMarkerPrefix()
+    {
+        $this->_loopMarkerPrefix = '#^'
+            . self::LOOP_KEY_PREFIX
+            . $this->_contentMarkers['marker_key']
+            . '#';
+
         return $this;
     }
 
@@ -604,7 +797,7 @@ abstract class ViewAbstract
      */
     protected function _clean()
     {
-        if ($this->_clearMarkers === FALSE) {
+        if ($this->_clearMarkers === false) {
             return $this;
         }
 
@@ -631,7 +824,7 @@ abstract class ViewAbstract
         switch ($type) {
             case'loop':
                 $reg1 = $this->_contentMarkers['loop_markers'];
-                $reg2 = FALSE;
+                $reg2 = false;
                 $reg3 = $this->_contentMarkers['loop_start'];
                 $reg4 = $this->_contentMarkers['loop_end'];
                 break;
@@ -639,7 +832,7 @@ abstract class ViewAbstract
             case'optional':
                 $reg1 = $this->_contentMarkers['optional_markers'];
                 $reg2 = $this->_contentMarkers['markers'];
-                $reg3 = $this->_contentMarkers['optional_end'];
+                $reg3 = $this->_contentMarkers['optional_start'];
                 $reg4 = $this->_contentMarkers['optional_end'];
                 break;
 
@@ -668,15 +861,10 @@ abstract class ViewAbstract
                 $len            = $end - $start;
                 $stringToRemove = substr($mainContent, $start, $len);
 
-                if ($reg2) {
-                    $bool = preg_match($reg2, $string);
-                    if ($bool) {
-                        $mainContent = str_replace($stringToRemove, '', $mainContent);
-                    } else {
-                        $mainContent = str_replace($stringToRemove, $string, $mainContent);
-                    }
+                if ($reg2 && !preg_match($reg2, $string)) {
+                    $mainContent = str_replace($stringToRemove, $string, $mainContent);
                 } else {
-                    $mainContent = preg_replace($reg1, '', $mainContent);
+                    $mainContent = str_replace($stringToRemove, '', $mainContent);
                 }
             }
         }
@@ -801,7 +989,7 @@ abstract class ViewAbstract
      * @param string $type
      * @return bool|void
      */
-    protected function _templateCache($data = NULL, $type = 'template')
+    protected function _templateCache($data = null, $type = 'template')
     {
         /** @var Blue\Cache $cache */
         $cache      = Loader::getObject('Core\Blue\Model\Cache');
@@ -824,6 +1012,9 @@ abstract class ViewAbstract
         
     }
 
+    /**
+     * lunch after block initialization
+     */
     public function afterInitializeBlock()
     {
         
